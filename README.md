@@ -461,3 +461,363 @@ Final Architecture
              (e.g., http://auth-service:3000)
 
 This project demonstrates the complete local microservices workflow: Node.js services → Docker images → Containers → Kubernetes Deployments → Services → Pod-to-Pod communication → Ingress routing, closely matching how applications are deployed in production environments.
+
+
+Project Roadmap
+Phase 1
+--------
+✅ Create 3 Node.js Services
+✅ Dockerize Services
+✅ Push Images to Docker Hub
+✅ Kubernetes Deployments
+✅ Running Pods
+
+Phase 2
+--------
+➡ Create Kubernetes Services
+➡ Service Discovery
+➡ Pod-to-Pod Communication
+
+Phase 3
+--------
+➡ Install NGINX Ingress
+➡ Configure Ingress
+➡ Access Services from Browser
+
+Phase 4
+--------
+➡ ConfigMaps
+➡ Secrets
+
+Phase 5
+--------
+➡ MongoDB Deployment
+➡ Persistent Volume
+➡ Connect Services
+
+Phase 6
+--------
+➡ Health Checks
+➡ Readiness Probe
+➡ Liveness Probe
+
+Phase 7
+--------
+➡ HPA (Horizontal Pod Autoscaler)
+
+Phase 8
+--------
+➡ GitHub Actions CI/CD
+
+Phase 9
+--------
+➡ Helm Charts
+Current Status
+
+You have completed
+
+✔ Auth Service
+✔ User Service
+✔ Product Service
+✔ Docker Images
+✔ Docker Hub
+✔ Kubernetes Deployment
+✔ Running Pods
+
+Now we continue.
+
+STEP 15 — Create Kubernetes Services
+What is a Service?
+
+Currently
+
+Browser
+      ❌
+      |
+Pod
+
+Pods get recreated.
+
+Their IP changes.
+
+You should never call a Pod directly.
+
+Instead Kubernetes creates a stable endpoint called Service.
+
+Browser
+      |
+ Service
+      |
+     Pod
+Directory Structure
+Microservice-Docker-Kubernetes
+
+│
+├── auth-service
+├── user-service
+├── product-service
+│
+└── k8s
+      │
+      ├── auth-deployment.yaml
+      ├── user-deployment.yaml
+      ├── product-deployment.yaml
+      │
+      ├── auth-service.yaml
+      ├── user-service.yaml
+      ├── product-service.yaml
+STEP 15.1
+
+Create
+
+auth-service.yaml
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: auth-service
+
+spec:
+
+  selector:
+    app: auth
+
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+
+  type: ClusterIP
+
+Save.
+
+STEP 15.2
+
+Create
+
+user-service.yaml
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: user-service
+
+spec:
+
+  selector:
+    app: user
+
+  ports:
+    - protocol: TCP
+      port: 3001
+      targetPort: 3001
+
+  type: ClusterIP
+
+Save.
+
+STEP 15.3
+
+Create
+
+product-service.yaml
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: product-service
+
+spec:
+
+  selector:
+    app: product
+
+  ports:
+    - protocol: TCP
+      port: 3002
+      targetPort: 3002
+
+  type: ClusterIP
+
+Save.
+
+STEP 15.4
+
+Deploy all Services
+
+kubectl apply -f auth-service.yaml
+kubectl apply -f user-service.yaml
+kubectl apply -f product-service.yaml
+STEP 15.5
+
+Verify
+
+kubectl get svc
+
+Expected
+
+NAME              TYPE        PORT
+
+auth-service      ClusterIP
+
+user-service      ClusterIP
+
+product-service   ClusterIP
+
+kubernetes
+STEP 15.6
+
+Describe
+
+kubectl describe svc auth-service
+
+Observe
+
+Selector
+
+Endpoints
+
+ClusterIP
+STEP 15.7
+
+Describe User Service
+
+kubectl describe svc user-service
+STEP 15.8
+
+Describe Product Service
+
+kubectl describe svc product-service
+STEP 16 — Verify Pod Communication
+
+Get pods
+
+kubectl get pods
+
+Example
+
+user-deployment-xxxxx
+
+Open terminal
+
+kubectl exec -it user-deployment-xxxxx -- sh
+
+Now you are inside Linux.
+
+STEP 16.1
+
+Check DNS
+
+nslookup auth-service
+
+Expected
+
+Name: auth-service
+
+Address: 10.x.x.x
+STEP 16.2
+
+Call Auth Service
+
+wget -qO- http://auth-service:3000
+
+Expected
+
+Auth Service
+STEP 16.3
+
+Call Product Service
+
+wget -qO- http://product-service:3002
+
+Expected
+
+Product Service
+STEP 17
+
+Modify User Service
+
+Install Axios if not already installed.
+
+npm install axios
+
+Update index.js:
+
+const express = require("express");
+const axios = require("axios");
+
+const app = express();
+
+app.get("/", (req, res) => {
+    res.send("User Service");
+});
+
+app.get("/details", async (req, res) => {
+
+    const auth = await axios.get("http://auth-service:3000");
+
+    const product = await axios.get("http://product-service:3002");
+
+    res.json({
+        auth: auth.data,
+        product: product.data
+    });
+
+});
+
+app.listen(3001);
+STEP 18
+
+Rebuild image
+
+docker build -t user-service:v2 .
+
+Tag
+
+docker tag user-service:v2 firdousalam2058/user-service:v2
+
+Push
+
+docker push firdousalam2058/user-service:v2
+
+Update Deployment
+
+user-service:v2
+
+Apply
+
+kubectl apply -f user-deployment.yaml
+STEP 19
+
+Install NGINX Ingress
+
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+
+Wait
+
+kubectl get pods -n ingress-nginx
+
+All pods should become Running.
+
+STEP 20
+
+Create
+
+ingress.yaml
+
+We'll do this after verifying that the Services work correctly.
+
+Learning Outcome
+
+By the end of this project, you'll understand:
+
+Docker image creation and publishing
+Kubernetes Deployments and rolling updates
+Services and ClusterIP networking
+Kubernetes DNS (auth-service, user-service, etc.)
+Pod-to-pod communication
+NGINX Ingress routing
+Image updates and rolling deployments
+Production-ready microservice architecture
+
+I recommend progressing one step at a time: first create and verify the three *-service.yaml files and confirm kubectl get svc shows all three services before moving on to inter-service communication and Ingress.

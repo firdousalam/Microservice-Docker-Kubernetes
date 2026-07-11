@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: product-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: product
+
+  template:
+
+    metadata:
+      labels:
+        app: product
+
+    spec:
+
+      containers:
+
+      - name: product
+
+        image: firdousalam2058/product-service:v1
+
+        imagePullPolicy: IfNotPresent
+
+        ports:
+        - containerPort: 3002
