@@ -2,43 +2,50 @@ apiVersion: apps/v1
 kind: Deployment
 
 metadata:
-  name: auth-deployment
+  name: product-deployment
 
 spec:
-  replicas: 1
+  replicas: {{ .Values.product.replicas }}
 
   selector:
     matchLabels:
-      app: auth
+      app: product
 
   template:
+
     metadata:
       labels:
-        app: auth
+        app: product
 
     spec:
+
       containers:
-      - name: auth
-        image: firdousalam2058/auth-service:v2
+
+      - name: product
+
+        image: {{ .Values.product.image }}
+
         env:
         - name: MONGO_URI
           valueFrom:
             secretKeyRef:
               name: mongodb-secret
               key: MONGO_URI
+
         imagePullPolicy: IfNotPresent
+
         ports:
-        - containerPort: 3000
+        - containerPort: {{ .Values.product.port }}
         readinessProbe:
           httpGet:
             path: /health
-            port: 3000
+            port: {{ .Values.product.port }}
           initialDelaySeconds: 10
           periodSeconds: 5
 
         livenessProbe:
           httpGet:
             path: /health
-            port: 3000
+            port: {{ .Values.product.port }}
           initialDelaySeconds: 20
           periodSeconds: 10

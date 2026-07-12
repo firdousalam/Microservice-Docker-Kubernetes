@@ -11,6 +11,12 @@ mongoose.connect(process.env.MONGO_URI)
 app.get("/product", (req, res) => {
     res.send("Product Service");
 });
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "UP",
+        service: "Product Service"
+    });
+});
 
 app.listen(3002, () => {
     console.log("Product running");

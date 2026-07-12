@@ -25,5 +25,9 @@ app.get("/user/details", async (req, res) => {
     });
 
 });
-
-app.listen(3001);
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "UP",
+        service: "User Service"
+    });
+});

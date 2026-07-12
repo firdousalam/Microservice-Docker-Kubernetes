@@ -1,3 +1,0 @@
-mongodb+srv://Firdous:Zuni2058Mongo@cluster0.hwth0kg.mongodb.net/?appName=Cluster0
-
-kubectl create secret generic mongodb-secret --from-literal=MONGO_URI="mongodb+srv://Firdous:Zuni2058Mongo@cluster0.hwth0kg.mongodb.net/?appName=Cluster0"

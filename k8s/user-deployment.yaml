@@ -36,3 +36,16 @@ spec:
 
         ports:
         - containerPort: 3001
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 20
+          periodSeconds: 10
