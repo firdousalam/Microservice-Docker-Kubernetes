@@ -1,13 +1,19 @@
 const express = require("express");
 const axios = require("axios");
-
+require("dotenv").config();
 const app = express();
 
-app.get("/", (req, res) => {
+const mongoose = require("mongoose");
+
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log("Connected to MongoDB Atlas"))
+    .catch((err) => console.error("MongoDB connection failed:", err));
+
+app.get("/user", (req, res) => {
     res.send("User Service");
 });
 
-app.get("/details", async (req, res) => {
+app.get("/user/details", async (req, res) => {
 
     const auth = await axios.get("http://auth-service:3000");
 

@@ -25,6 +25,13 @@ spec:
 
         image: firdousalam2058/product-service:v1
 
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: MONGO_URI
+
         imagePullPolicy: IfNotPresent
 
         ports:

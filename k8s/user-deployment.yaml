@@ -23,9 +23,16 @@ spec:
 
       - name: user
 
-        image: firdousalam2058/user-service:v1
+        image: firdousalam2058/user-service:v2
 
         imagePullPolicy: IfNotPresent
+
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: MONGO_URI
 
         ports:
         - containerPort: 3001
