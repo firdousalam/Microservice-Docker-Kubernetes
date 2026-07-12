@@ -1,3 +1,773 @@
+Building Production-Ready Node.js Microservices using Docker, Kubernetes, Helm & CI/CD
+
+Subtitle:
+A Complete Beginner to Intermediate Hands-on Guide
+
+What will be included
+Chapter 1 – Introduction
+What are Microservices?
+Monolith vs Microservices
+Why Docker?
+Why Kubernetes?
+What we are going to build
+Final architecture
+Chapter 2 – Software Installation
+Node.js
+Docker Desktop
+Kubernetes
+kubectl
+Helm
+Git
+VS Code
+
+Verification commands
+
+node -v
+npm -v
+docker version
+kubectl version --client
+helm version
+Chapter 3 – Project Structure
+Microservice-Docker-Kubernetes
+
+│
+├── auth-service
+├── user-service
+├── product-service
+├── k8s
+├── helm
+└── .github
+
+Folder explanation
+
+Chapter 4 – Build Three Node.js Services
+Express
+Routes
+Package.json
+Environment Variables
+Testing
+Chapter 5 – Docker
+Dockerfile
+.dockerignore
+Build
+Run
+Stop
+Remove
+Rebuild
+Chapter 6 – Docker Hub
+Create Repository
+Login
+Tag
+Push
+Pull
+Chapter 7 – Kubernetes
+
+This chapter alone will include
+
+Deployment
+Service
+Namespace
+Pods
+ReplicaSets
+
+with complete YAML explanation.
+
+Chapter 8 – Kubernetes Networking
+ClusterIP
+DNS
+Service Discovery
+
+Examples
+
+auth-service.default.svc.cluster.local
+
+Communication between services.
+
+Chapter 9 – Ingress
+Install NGINX Ingress
+Create ingress.yaml
+Path Routing
+localhost/auth
+localhost/user
+localhost/product
+
+Also explain why in Docker Desktop it worked on
+
+localhost:8080
+
+instead of
+
+localhost
+Chapter 10 – MongoDB Atlas
+Create Cluster
+Create Database User
+Network Access
+Connection String
+ConfigMap
+Secret
+Mongoose
+Chapter 11 – JWT Authentication
+
+Complete flow
+
+Login
+
+↓
+
+Auth Service
+
+↓
+
+JWT Token
+
+↓
+
+Browser
+
+↓
+
+User Service
+
+↓
+
+Verify Token
+
+↓
+
+Response
+
+Including middleware and code.
+
+Chapter 12 – Health Checks
+GET /health
+
+Readiness Probe
+
+Liveness Probe
+
+Explanation of
+
+initialDelaySeconds
+
+periodSeconds
+
+failureThreshold
+Chapter 13 – Scaling
+kubectl scale
+
+ReplicaSets
+
+Pods
+
+Rolling Update
+
+Rollback
+
+Chapter 14 – HPA
+
+Explain
+
+Metrics Server
+
+CPU
+
+Memory
+
+Autoscaling
+
+Chapter 15 – Logging
+kubectl logs
+
+kubectl describe
+
+kubectl exec
+
+Debugging.
+
+Chapter 16 – Helm
+
+From
+
+helm create
+
+to
+
+helm install
+
+helm upgrade
+
+helm uninstall
+
+Including
+
+Chart.yaml
+
+values.yaml
+
+_helpers.tpl
+
+templates
+Chapter 17 – GitHub Actions
+
+Pipeline
+
+Git Push
+
+↓
+
+GitHub Actions
+
+↓
+
+Build
+
+↓
+
+Docker Hub
+
+↓
+
+Kubernetes
+
+↓
+
+Rolling Update
+Chapter 18 – Troubleshooting
+
+This is my favorite chapter because it contains all the real-world issues we solved together.
+
+We'll document:
+
+Kubernetes API not reachable
+EOF
+127.0.0.1:6443
+ErrImageNeverPull
+Docker Hub login
+Wrong image tags
+kubectl exec
+DNS lookup
+MongoDB Atlas undefined connection string
+Ingress issues
+Helm template errors
+HPA command changes
+Pod logs
+Rollback strategies
+
+Each issue will include:
+
+Symptom
+Root cause
+Resolution
+Verification steps
+Chapter 19 – Useful Commands
+
+Docker
+
+docker build
+
+docker run
+
+docker ps
+
+docker images
+
+docker logs
+
+Kubernetes
+
+kubectl get
+
+kubectl apply
+
+kubectl delete
+
+kubectl describe
+
+kubectl logs
+
+kubectl exec
+
+Helm
+
+helm install
+
+helm list
+
+helm upgrade
+
+helm rollback
+
+helm uninstall
+Chapter 20 – Final Architecture
+                 Browser
+
+                     │
+
+             NGINX Ingress
+
+                     │
+
+     ┌──────────┬──────────┬──────────┐
+
+     ▼          ▼          ▼
+
+   Auth       User      Product
+
+     │          │          │
+
+     └──────────┴──────────┘
+
+              MongoDB Atlas
+
+
+uilding Production-Ready Node.js Microservices using Docker, Kubernetes, Helm & CI/CD
+
+A Complete Hands-on Guide with Docker Desktop, Kubernetes, MongoDB Atlas, JWT Authentication, Helm, and GitHub Actions
+
+Approximately 50 pages.
+
+It will contain
+📘 Chapter 1 – Introduction
+What are Microservices?
+Why Node.js?
+Why Docker?
+Why Kubernetes?
+Final Architecture
+📘 Chapter 2 – Prerequisites
+
+Software Installation
+
+Node.js
+Docker Desktop
+Kubernetes
+kubectl
+Helm
+Git
+VS Code
+
+Verification Commands
+
+📘 Chapter 3 – Project Structure
+Microservice-Docker-Kubernetes
+
+├── auth-service
+├── user-service
+├── product-service
+├── k8s
+├── helm
+├── .github
+├── README.md
+└── COMPLETE_GUIDE.md
+
+Every folder explained.
+
+📘 Chapter 4 – Build Three Node.js Services
+
+Complete implementation
+
+Express
+Routes
+package.json
+Environment Variables
+📘 Chapter 5 – Docker
+
+Complete explanation
+
+Dockerfile
+Build
+Run
+Stop
+Remove
+Docker Hub
+📘 Chapter 6 – Kubernetes
+
+Everything from scratch
+
+Deployment
+ReplicaSet
+Pods
+Services
+ClusterIP
+YAML explanation
+📘 Chapter 7 – Kubernetes Networking
+DNS
+Service Discovery
+Internal Communication
+Auth
+
+↓
+
+User
+
+↓
+
+Product
+📘 Chapter 8 – Ingress
+
+Installation
+
+Routing
+
+localhost/auth
+
+localhost/user
+
+localhost/product
+
+Also explain why we needed
+
+localhost:8080
+
+instead of
+
+localhost
+📘 Chapter 9 – MongoDB Atlas
+
+Everything
+
+Cluster
+User
+IP Whitelist
+Secret
+ConfigMap
+Mongoose
+📘 Chapter 10 – JWT Authentication
+
+Exactly what we discussed
+
+Browser
+
+↓
+
+Login
+
+↓
+
+Auth Service
+
+↓
+
+JWT
+
+↓
+
+User Service
+
+↓
+
+Product Service
+
+Middleware
+
+Authorization Header
+
+Protected APIs
+
+📘 Chapter 11 – Health Checks
+GET /health
+
+Readiness Probe
+
+Liveness Probe
+
+Complete explanation
+
+📘 Chapter 12 – Scaling
+
+ReplicaSets
+
+kubectl scale
+
+HPA
+
+Rolling Updates
+
+Rollback
+
+📘 Chapter 13 – Logging
+kubectl logs
+
+kubectl exec
+
+kubectl describe
+
+Debugging techniques.
+
+📘 Chapter 14 – Monitoring
+
+Prometheus
+
+Grafana
+
+CPU
+
+Memory
+
+Dashboard
+
+📘 Chapter 15 – Helm
+
+Everything
+
+Chart.yaml
+
+values.yaml
+
+_helpers.tpl
+
+templates/
+
+Template expressions
+
+Installation
+
+Upgrade
+
+Rollback
+
+📘 Chapter 16 – GitHub Actions
+
+CI/CD Pipeline
+
+Developer
+
+↓
+
+Git Push
+
+↓
+
+GitHub Actions
+
+↓
+
+Docker Build
+
+↓
+
+Docker Hub
+
+↓
+
+kubectl set image
+
+↓
+
+Rolling Update
+📘 Chapter 17 – Troubleshooting
+
+Every issue we solved together.
+
+Including
+
+✅ Kubernetes API
+
+✅ EOF
+
+✅ ImagePullPolicy
+
+✅ ErrImageNeverPull
+
+✅ Docker Hub
+
+✅ Docker Context
+
+✅ kubectl exec
+
+✅ MongoDB Atlas
+
+✅ Secrets
+
+✅ ConfigMap
+
+✅ Helm
+
+✅ HPA
+
+✅ Ingress
+
+✅ localhost vs localhost:8080
+
+✅ DNS
+
+📘 Chapter 18 – Best Practices
+
+Folder Structure
+
+Naming
+
+Environment Variables
+
+Secrets
+
+Resource Limits
+
+Logging
+
+Versioning
+
+Git Strategy
+
+📘 Chapter 19 – Interview Questions
+
+Docker
+
+Kubernetes
+
+Helm
+
+Microservices
+
+JWT
+
+MongoDB Atlas
+
+GitHub Actions
+
+📘 Chapter 20 – Cheat Sheets
+
+Docker Commands
+
+kubectl Commands
+
+Helm Commands
+
+Git Commands
+
+Extra Bonus
+
+I'll also include:
+
+Architecture Diagrams
+                Browser
+
+                    │
+
+              NGINX Ingress
+
+                    │
+
+      ┌────────┬────────┬────────┐
+
+      ▼        ▼        ▼
+
+    Auth     User    Product
+
+      │        │        │
+
+      └────────┴────────┘
+
+           MongoDB Atlas
+Kubernetes Request Flow
+Browser
+
+↓
+
+Ingress
+
+↓
+
+Service
+
+↓
+
+Deployment
+
+↓
+
+Pod
+
+↓
+
+Container
+
+↓
+
+MongoDB Atlas
+Docker Flow
+Source Code
+
+↓
+
+Dockerfile
+
+↓
+
+Docker Image
+
+↓
+
+Docker Container
+
+↓
+
+Kubernetes
+JWT Flow
+Login
+
+↓
+
+Generate JWT
+
+↓
+
+Return Token
+
+↓
+
+Authorization Header
+
+↓
+
+Middleware
+
+↓
+
+Protected Route
+GitHub Actions Flow
+Git Push
+
+↓
+
+GitHub Actions
+
+↓
+
+Docker Build
+
+↓
+
+Docker Hub
+
+↓
+
+Update Deployment
+
+↓
+
+Rolling Update
+
+
+
+The sequence would be:
+
+README.md (GitHub overview)
+Chapter 1: Introduction & Architecture
+Chapter 2: Environment Setup
+Chapter 3: Build the 3 Node.js Services
+Chapter 4: Docker
+Chapter 5: Kubernetes Deployments & Services
+Chapter 6: Ingress & Networking
+Chapter 7: MongoDB Atlas & Secrets
+Chapter 8: JWT Authentication
+Chapter 9: Health Checks, Scaling & HPA
+Chapter 10: Helm
+Chapter 11: GitHub Actions CI/CD
+Chapter 12: Troubleshooting & Cheat Sheet
+
+
+
+
 # Microservice-Docker-Kubernetes
 This project is to create Microservices using Docker Kubernetes Ingress etc
 
