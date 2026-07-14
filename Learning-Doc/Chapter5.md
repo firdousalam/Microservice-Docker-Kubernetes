@@ -1,4 +1,4 @@
-# 📖 Chapter 4 – Docker: Containerizing the Node.js Microservices
+# 📖 Chapter 5 – Kubernetes Deployments & Services
 
 > **Series:** Building Production-Ready Node.js Microservices using Docker, Kubernetes, Helm & CI/CD
 
@@ -6,595 +6,812 @@
 
 # 📚 Chapter Overview
 
-In the previous chapter, we built three independent Node.js microservices. They run successfully on our local machine, but they still depend on the local Node.js installation and environment.
+In the previous chapter, we containerized our three Node.js microservices and published the Docker images to Docker Hub.
 
-In this chapter, we'll package each service into a Docker image, run it as a Docker container, and publish it to Docker Hub.
+Now it's time to deploy them to **Kubernetes**.
 
-Containerizing our services ensures they behave consistently across development, testing, and production environments.
+In this chapter, you will learn how to:
+
+- Understand Kubernetes architecture
+- Create Deployments
+- Create Services
+- Expose applications inside the cluster
+- Use Kubernetes DNS for service discovery
+- Verify Pods and Services
+- Troubleshoot common deployment issues
+- Deploy the Auth, User, and Product microservices
+
+This chapter also includes the real-world issues encountered during implementation and the solutions used to resolve them.
 
 ---
 
 # 🎯 Learning Objectives
 
-By the end of this chapter, you will have:
+By the end of this chapter, you will be able to:
 
-- ✅ Dockerfile for each microservice
-- ✅ `.dockerignore` file for each service
-- ✅ Docker images built locally
-- ✅ Running Docker containers
-- ✅ Images published to Docker Hub
-- ✅ Understanding of essential Docker commands
-- ✅ Solutions to common Docker issues encountered during this project
-
----
-
-# 🐳 What is Docker?
-
-Docker is a **containerization platform** that packages your application, runtime, libraries, and dependencies into a lightweight, portable image.
-
-Instead of saying:
-
-> *"It works on my machine."*
-
-Docker lets you confidently say:
-
-> **"It works the same everywhere."**
+- Deploy Docker images to Kubernetes
+- Create Kubernetes Deployments
+- Create ClusterIP Services
+- Understand Pod lifecycle
+- Use Kubernetes DNS
+- Verify deployments and services
+- Troubleshoot deployment failures
+- Enable communication between microservices
 
 ---
 
-# 🏗 Docker Workflow
+# ☸️ What is Kubernetes?
+
+Docker packages applications into containers.
+
+Kubernetes manages those containers.
+
+Instead of manually starting and stopping containers, Kubernetes automatically:
+
+- Deploys applications
+- Restarts failed containers
+- Scales applications
+- Performs rolling updates
+- Provides networking
+- Performs service discovery
+- Load balances traffic
+
+---
+
+# 🏗 Kubernetes Architecture
 
 ```text
-Node.js Source Code
-        │
-        ▼
-    Dockerfile
-        │
-        ▼
-   Docker Build
-        │
-        ▼
-   Docker Image
-        │
-        ▼
- Docker Container
+                    Kubernetes Cluster
+                           │
+     ┌─────────────────────┴─────────────────────┐
+     │                                           │
+ Master Node                               Worker Node
+     │                                           │
+ API Server                              Pods
+ Scheduler                               Containers
+ Controller Manager                      Services
+ etcd
+```
+
+For local development, Docker Desktop provides a **single-node Kubernetes cluster**.
+
+---
+
+# 🚀 Step 1 – Enable Kubernetes in Docker Desktop
+
+Open Docker Desktop and navigate to:
+
+```text
+Settings
+    │
+    ▼
+Kubernetes
+    │
+    ▼
+Enable Kubernetes
+    │
+    ▼
+Apply & Restart
+```
+
+Wait until Kubernetes reports:
+
+```text
+Running
 ```
 
 ---
 
-# 🚀 Step 1 – Verify Docker Installation
+# 🔍 Step 2 – Verify Installation
 
-Verify Docker is installed:
+Verify Docker:
 
 ```bash
 docker version
 ```
 
-Example output:
-
-```text
-Client:
- Version: 29.6.1
-
-Server:
- Version: 29.6.1
-```
-
-Check whether Docker is running:
+Verify kubectl:
 
 ```bash
-docker ps
+kubectl version --client
 ```
 
-Initially, you may see:
+Example:
 
 ```text
-CONTAINER ID   IMAGE   COMMAND   CREATED   STATUS   PORTS   NAMES
+Client Version: v1.36.1
 ```
-
-This simply means there are no running containers yet.
 
 ---
 
-# 📦 Step 2 – Create the Dockerfile
+# 🌐 Step 3 – Verify Kubernetes Context
 
-Navigate to the **Auth Service**.
+Check the current context:
 
 ```bash
-cd auth-service
+kubectl config current-context
 ```
 
-Create a file named:
+Expected:
 
 ```text
-Dockerfile
+docker-desktop
 ```
 
-> **Important:** The filename must be exactly `Dockerfile` (no extension).
+List contexts:
 
-Add the following content:
-
-```dockerfile
-FROM node:22-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm install
-
-COPY . .
-
-EXPOSE 3000
-
-CMD ["npm", "start"]
+```bash
+kubectl config get-contexts
 ```
 
----
-
-# 📖 Dockerfile Explanation
-
-| Instruction | Purpose |
-|------------|----------|
-| `FROM node:22-alpine` | Uses a lightweight Node.js image |
-| `WORKDIR /app` | Sets the working directory |
-| `COPY package*.json ./` | Copies dependency files |
-| `RUN npm install` | Installs project dependencies |
-| `COPY . .` | Copies application source code |
-| `EXPOSE 3000` | Documents the application's listening port |
-| `CMD ["npm","start"]` | Starts the application |
-
----
-
-# 🚫 Step 3 – Create `.dockerignore`
-
-Create a file named:
+Expected:
 
 ```text
-.dockerignore
+CURRENT   NAME
+
+*         docker-desktop
 ```
-
-Add the following:
-
-```gitignore
-node_modules
-.git
-.gitignore
-.env
-README.md
-```
-
-Using a `.dockerignore` file keeps the Docker build context small and prevents sensitive files from being copied into the image.
 
 ---
 
-# 🔨 Step 4 – Build the Docker Image
+# ✅ Step 4 – Verify Cluster
 
-Ensure you are inside the `auth-service` directory.
+```bash
+kubectl get nodes
+```
 
-Build the image:
+Expected:
+
+```text
+NAME               STATUS
+
+docker-desktop     Ready
+```
+
+---
+
+# ⚠️ Problem We Faced
+
+Initially, we encountered:
+
+```text
+Unable to connect to the server
+
+dial tcp 127.0.0.1:6443
+
+connection refused
+```
+
+Later, another error appeared:
+
+```text
+couldn't get current server API group list
+
+EOF
+```
+
+### Cause
+
+Kubernetes was not fully started inside Docker Desktop.
+
+### Solution
+
+1. Restart Docker Desktop.
+2. Ensure Kubernetes is enabled.
+3. Wait until Kubernetes status becomes **Running**.
+4. Verify:
+
+```bash
+kubectl get nodes
+```
+
+---
+
+# 📁 Step 5 – Create the Kubernetes Folder
+
+Project structure:
+
+```text
+Microservice-Docker-Kubernetes
+│
+├── auth-service
+├── user-service
+├── product-service
+│
+└── k8s
+```
+
+Navigate to the Kubernetes directory:
+
+```bash
+cd k8s
+```
+
+---
+
+# 🔐 Step 6 – Create the Auth Deployment
+
+Create:
+
+```text
+auth-deployment.yaml
+```
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: auth-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: auth
+
+  template:
+    metadata:
+      labels:
+        app: auth
+
+    spec:
+      containers:
+        - name: auth
+          image: firdousalam2058/auth-service:v1
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 3000
+```
+
+Apply the deployment:
+
+```bash
+kubectl apply -f auth-deployment.yaml
+```
+
+Verify:
+
+```bash
+kubectl get deployments
+```
+
+---
+
+# 👤 Step 7 – Create the User Deployment
+
+Create:
+
+```text
+user-deployment.yaml
+```
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: user-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: user
+
+  template:
+    metadata:
+      labels:
+        app: user
+
+    spec:
+      containers:
+        - name: user
+          image: firdousalam2058/user-service:v1
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 3001
+```
+
+Apply:
+
+```bash
+kubectl apply -f user-deployment.yaml
+```
+
+---
+
+# 🛒 Step 8 – Create the Product Deployment
+
+Create:
+
+```text
+product-deployment.yaml
+```
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: product-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: product
+
+  template:
+    metadata:
+      labels:
+        app: product
+
+    spec:
+      containers:
+        - name: product
+          image: firdousalam2058/product-service:v1
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 3002
+```
+
+Apply:
+
+```bash
+kubectl apply -f product-deployment.yaml
+```
+
+---
+
+# ✅ Step 9 – Verify Pods
+
+```bash
+kubectl get pods
+```
+
+Expected:
+
+```text
+auth-deployment-xxxx
+
+user-deployment-xxxx
+
+product-deployment-xxxx
+```
+
+All Pods should eventually reach the **Running** state.
+
+---
+
+# ⚠️ Issue We Faced – `ErrImageNeverPull`
+
+Initially, all Pods failed with:
+
+```text
+ErrImageNeverPull
+```
+
+Pods remained in the **Pending** state.
+
+### Root Cause
+
+Our Deployment YAML used:
+
+```yaml
+imagePullPolicy: Never
+```
+
+Kubernetes attempted to use a local Docker image that was not available inside the cluster.
+
+### Solution
+
+Update the Deployment:
+
+```yaml
+image: firdousalam2058/auth-service:v1
+imagePullPolicy: Always
+```
+
+Rebuild, tag, and push the image:
 
 ```bash
 docker build -t auth-service:v1 .
+
+docker tag auth-service:v1 firdousalam2058/auth-service:v1
+
+docker push firdousalam2058/auth-service:v1
 ```
 
-### Command Breakdown
-
-| Part | Meaning |
-|------|----------|
-| `docker build` | Builds a Docker image |
-| `-t` | Assigns a tag |
-| `auth-service:v1` | Image name and version |
-| `.` | Current directory as the build context |
-
-Verify the image:
+Restart the Deployment:
 
 ```bash
-docker images
+kubectl rollout restart deployment auth-deployment
+```
+
+Repeat the same process for the User and Product services.
+
+---
+
+# 🌐 Step 10 – Create Kubernetes Services
+
+Pods have dynamic IP addresses. A **Service** provides a stable endpoint and DNS name.
+
+## Auth Service
+
+```yaml
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: auth-service
+
+spec:
+  selector:
+    app: auth
+
+  ports:
+    - port: 3000
+      targetPort: 3000
+
+  type: ClusterIP
+```
+
+Apply:
+
+```bash
+kubectl apply -f auth-service.yaml
+```
+
+---
+
+## User Service
+
+```yaml
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: user-service
+
+spec:
+  selector:
+    app: user
+
+  ports:
+    - port: 3001
+      targetPort: 3001
+
+  type: ClusterIP
+```
+
+Apply:
+
+```bash
+kubectl apply -f user-service.yaml
+```
+
+---
+
+## Product Service
+
+```yaml
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: product-service
+
+spec:
+  selector:
+    app: product
+
+  ports:
+    - port: 3002
+      targetPort: 3002
+
+  type: ClusterIP
+```
+
+Apply:
+
+```bash
+kubectl apply -f product-service.yaml
+```
+
+---
+
+# 🔍 Step 11 – Verify Services
+
+```bash
+kubectl get svc
 ```
 
 Expected:
 
 ```text
-REPOSITORY        TAG
+NAME              TYPE        PORT(S)
 
-auth-service      v1
+auth-service      ClusterIP   3000/TCP
+
+user-service      ClusterIP   3001/TCP
+
+product-service   ClusterIP   3002/TCP
 ```
 
 ---
 
-# ▶️ Step 5 – Run the Container
+# 🌐 Step 12 – Test Kubernetes DNS
 
-Run the container:
+Open a shell inside one of the Pods:
 
 ```bash
-docker run -d -p 3000:3000 --name auth-container auth-service:v1
+kubectl exec -it <user-pod-name> -- sh
 ```
 
-### Command Breakdown
-
-| Option | Description |
-|---------|-------------|
-| `-d` | Run container in detached mode |
-| `-p 3000:3000` | Maps host port to container port |
-| `--name` | Assigns a container name |
-
-Verify:
+Verify DNS resolution:
 
 ```bash
-docker ps
+nslookup auth-service
 ```
 
 Expected:
 
 ```text
-CONTAINER ID
-IMAGE
-STATUS
+Name:
+auth-service.default.svc.cluster.local
 
-auth-service:v1
+Address:
+10.xx.xx.xx
 ```
 
-Test the API:
+This confirms Kubernetes DNS is functioning correctly.
 
-```http
-GET http://localhost:3000/auth
+---
+
+# 🔄 Step 13 – Service-to-Service Communication
+
+Instead of calling `localhost`, use the Kubernetes Service name:
+
+```javascript
+const AUTH_SERVICE_URL = "http://auth-service:3000";
+```
+
+Example:
+
+```javascript
+const axios = require("axios");
+
+const response = await axios.get(
+  "http://auth-service:3000/auth"
+);
+
+console.log(response.data);
+```
+
+Kubernetes automatically resolves `auth-service` to the appropriate Pod.
+
+---
+
+# 📋 Step 14 – Verify Resources
+
+Useful commands:
+
+```bash
+kubectl get all
+
+kubectl get pods
+
+kubectl get deployments
+
+kubectl get svc
 ```
 
 ---
 
-# 👤 Step 6 – Repeat for User Service
+# 🛠 Step 15 – Useful Kubernetes Commands
 
-Create a similar `Dockerfile` inside **user-service**.
-
-Only change the exposed port:
-
-```dockerfile
-EXPOSE 3001
-```
-
-Build:
+Describe a Pod:
 
 ```bash
-docker build -t user-service:v1 .
+kubectl describe pod <pod-name>
 ```
-
-Run:
-
-```bash
-docker run -d -p 3001:3001 --name user-container user-service:v1
-```
-
-Verify:
-
-```http
-GET http://localhost:3001/user
-```
-
----
-
-# 🛒 Step 7 – Repeat for Product Service
-
-Update the Dockerfile:
-
-```dockerfile
-EXPOSE 3002
-```
-
-Build:
-
-```bash
-docker build -t product-service:v1 .
-```
-
-Run:
-
-```bash
-docker run -d -p 3002:3002 --name product-container product-service:v1
-```
-
-Verify:
-
-```http
-GET http://localhost:3002/product
-```
-
----
-
-# 📋 Step 8 – View Running Containers
-
-List all running containers:
-
-```bash
-docker ps
-```
-
-Expected:
-
-```text
-auth-container
-user-container
-product-container
-```
-
----
-
-# 📄 Step 9 – View Container Logs
 
 View logs:
 
 ```bash
-docker logs auth-container
+kubectl logs <pod-name>
 ```
 
-Follow logs in real time:
+Delete a Pod (Deployment recreates it automatically):
 
 ```bash
-docker logs -f auth-container
+kubectl delete pod <pod-name>
 ```
 
----
-
-# ⏹ Step 10 – Stop Containers
+Restart a Deployment:
 
 ```bash
-docker stop auth-container
-docker stop user-container
-docker stop product-container
+kubectl rollout restart deployment auth-deployment
 ```
 
----
-
-# 🗑 Step 11 – Remove Containers
+Check rollout status:
 
 ```bash
-docker rm auth-container
-docker rm user-container
-docker rm product-container
+kubectl rollout status deployment auth-deployment
 ```
-
----
-
-# ☁️ Step 12 – Log in to Docker Hub
-
-Authenticate with Docker Hub:
-
-```bash
-docker login
-```
-
-During this project, we logged in using:
-
-```text
-Username: firdousalam2058
-```
-
----
-
-# 🏷 Step 13 – Tag Docker Images
-
-Tag each image before pushing it to Docker Hub.
-
-```bash
-docker tag auth-service:v1 firdousalam2058/auth-service:v1
-
-docker tag user-service:v1 firdousalam2058/user-service:v1
-
-docker tag product-service:v1 firdousalam2058/product-service:v1
-```
-
----
-
-# ☁️ Step 14 – Push Images to Docker Hub
-
-Push each image:
-
-```bash
-docker push firdousalam2058/auth-service:v1
-
-docker push firdousalam2058/user-service:v1
-
-docker push firdousalam2058/product-service:v1
-```
-
----
-
-# ✅ Step 15 – Verify Docker Images
-
-Run:
-
-```bash
-docker images
-```
-
-Expected:
-
-```text
-firdousalam2058/auth-service:v1
-
-firdousalam2058/user-service:v1
-
-firdousalam2058/product-service:v1
-```
-
----
-
-# 🔄 Updating an Image
-
-Whenever you modify your application:
-
-### Build a new version
-
-```bash
-docker build -t auth-service:v2 .
-```
-
-### Tag it
-
-```bash
-docker tag auth-service:v2 firdousalam2058/auth-service:v2
-```
-
-### Push it
-
-```bash
-docker push firdousalam2058/auth-service:v2
-```
-
-> We will use these versioned images later when performing **Kubernetes Rolling Updates**.
 
 ---
 
 # ⚠️ Common Issues We Solved
 
-## 1. Dockerfile Not Found
+## 1. `kubectl exec` Command Failed
 
-Error:
+Incorrect command:
 
-```text
-failed to read Dockerfile:
-open Dockerfile:
-no such file or directory
+```powershell
+> kubectl exec -it user-deployment-xxxx -- sh
 ```
 
-### Cause
-
-The build command was executed from the wrong directory (for example, `k8s` instead of `auth-service`).
+PowerShell interpreted `>` as redirection.
 
 ### Solution
 
 ```bash
-cd auth-service
-
-docker build -t auth-service:v1 .
+kubectl exec -it <pod-name> -- sh
 ```
 
 ---
 
-## 2. Push Access Denied
+## 2. `auth-service.yaml` Not Found
 
 Error:
 
 ```text
-push access denied
-repository does not exist
-authorization failed
+error: the path "auth-service.yaml" does not exist
+```
+
+### Solution
+
+Create the file in the `k8s` directory and reapply it:
+
+```bash
+kubectl apply -f auth-service.yaml
+```
+
+---
+
+## 3. No Objects Passed to Apply
+
+Error:
+
+```text
+error: no objects passed to apply
 ```
 
 ### Cause
 
-- Incorrect Docker Hub username
-- Repository name doesn't match the logged-in account
+The YAML file was empty or invalid.
 
 ### Solution
 
-Login:
+Add a valid Kubernetes manifest and apply it again.
 
-```bash
-docker login
+---
+
+## 4. Deployment Not Found
+
+Error:
+
+```text
+Error from server (NotFound):
+deployments.apps "auth-deployment" not found
 ```
 
-Retag the image:
+### Solution
+
+Reapply the Deployment:
 
 ```bash
-docker tag auth-service:v1 firdousalam2058/auth-service:v1
-```
-
-Push again:
-
-```bash
-docker push firdousalam2058/auth-service:v1
+kubectl apply -f auth-deployment.yaml
 ```
 
 ---
 
-## 3. Running the Wrong Image Version
+## 5. Pod Not Found
 
-If your latest code changes aren't reflected:
+Error:
 
-- Rebuild the image
-- Increment the version (`v2`, `v3`, ...)
-- Push the new version
-- Update the Kubernetes Deployment
+```text
+error: pods "auth-pod" not found
+```
 
----
+### Cause
 
-# 📋 Docker Commands Cheat Sheet
+Deployment-managed Pods have generated names.
 
-| Command | Purpose |
-|----------|----------|
-| `docker build -t image:v1 .` | Build an image |
-| `docker images` | List images |
-| `docker ps` | List running containers |
-| `docker ps -a` | List all containers |
-| `docker run -d -p 3000:3000 image:v1` | Run a container |
-| `docker logs <container>` | View logs |
-| `docker stop <container>` | Stop a container |
-| `docker rm <container>` | Remove a container |
-| `docker rmi <image>` | Remove an image |
-| `docker tag src dest` | Tag an image |
-| `docker push <image>` | Push an image |
-| `docker pull <image>` | Pull an image |
+Example:
+
+```text
+auth-deployment-79479949d8-qvl48
+```
+
+List Pods:
+
+```bash
+kubectl get pods
+```
+
+Use the exact Pod name:
+
+```bash
+kubectl logs auth-deployment-79479949d8-qvl48
+```
 
 ---
 
 # 💡 Best Practices
 
-- Keep Dockerfiles simple and readable.
-- Always use a `.dockerignore` file.
-- Never copy `.env` files into Docker images.
-- Use versioned image tags (`v1`, `v2`, `v3`) instead of relying on `latest`.
-- Rebuild images after every code change.
-- Test Docker images locally before pushing.
-- Store production configuration using Kubernetes **Secrets** and **ConfigMaps**, not inside Docker images.
+- Use Deployments instead of standalone Pods.
+- Expose applications using Services.
+- Use Kubernetes DNS instead of hardcoded IP addresses.
+- Keep Deployment and Service YAML files separate.
+- Use versioned Docker image tags.
+- Verify each deployment using `kubectl get pods` and `kubectl get svc`.
 
 ---
 
 # ✅ Verify Before Moving On
 
-Before proceeding to the next chapter, ensure that:
+Ensure the following:
 
-- ✅ Three Dockerfiles exist
-- ✅ Three `.dockerignore` files exist
-- ✅ Docker images build successfully
-- ✅ Containers start correctly
-- ✅ APIs respond on the expected ports
-- ✅ Images are published to Docker Hub under **firdousalam2058**
+- ✅ Kubernetes cluster is running
+- ✅ Three Deployments are created
+- ✅ Three Pods are in the Running state
+- ✅ Three ClusterIP Services are created
+- ✅ Kubernetes DNS resolves service names
+- ✅ Microservices communicate using Service names
 
 ---
 
 # 📚 Chapter Summary
 
-In this chapter, we containerized each Node.js microservice using Docker. We created Dockerfiles, built Docker images, ran containers locally, and published the images to Docker Hub.
+In this chapter, we deployed the Auth, User, and Product microservices to Kubernetes using **Deployments** and exposed them internally with **ClusterIP Services**.
 
-We also addressed common Docker issues encountered during development, including:
+We also learned how Kubernetes DNS enables service discovery and resolved several real-world deployment issues, including:
 
-- Building from the wrong directory
-- Dockerfile not found errors
-- Docker Hub authentication failures
-- Image versioning
+- `ErrImageNeverPull`
+- Missing YAML files
+- Empty manifests
+- Deployment recreation
+- Pod naming confusion
 
-These practices provide a strong foundation for deploying applications in Kubernetes.
+These concepts form the foundation for running production-ready applications on Kubernetes.
 
 ---
 
 # 🚀 What's Next?
 
-In **Chapter 5 – Deploying to Kubernetes**, we will:
+In **Chapter 6 – Kubernetes Ingress & External Access**, we will:
 
-- Create Kubernetes Deployments
-- Create Kubernetes Services
-- Deploy our Docker images
-- Enable communication between microservices
-- Use Kubernetes DNS-based service discovery
-- Prepare the application for NGINX Ingress and production deployment
+- Install the NGINX Ingress Controller
+- Create Ingress resources
+- Expose all three microservices through a single entry point
+- Troubleshoot why `http://localhost/user` initially didn't work on Docker Desktop
+- Configure port forwarding and verify external access
 
-This is where we transition from standalone Docker containers to a fully orchestrated Kubernetes environment.
+This is where we'll make our Kubernetes applications accessible from outside the cluster.
 
 ---
 
-## 📌 End of Chapter 4
+## 📌 End of Chapter 5
 
 Congratulations! 🎉
 
-You have successfully containerized your Node.js microservices and published them to Docker Hub. Your application is now ready to be deployed and managed by Kubernetes.
+You have successfully deployed your Node.js microservices to Kubernetes and enabled internal communication using Kubernetes Services and DNS. Your application is now ready for external access using NGINX Ingress.
