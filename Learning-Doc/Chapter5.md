@@ -796,6 +796,125 @@ These concepts form the foundation for running production-ready applications on 
 
 ---
 
+---
+
+# 💡 Understanding `NXDOMAIN` During `nslookup`
+
+When testing Kubernetes DNS, you may see output similar to the following:
+
+```bash
+kubectl exec -it <pod-name> -- sh
+
+nslookup auth-service
+```
+
+Output:
+
+```text
+Server:         10.96.0.10
+Address:        10.96.0.10:53
+
+** server can't find auth-service.cluster.local: NXDOMAIN
+
+** server can't find auth-service.svc.cluster.local: NXDOMAIN
+
+Name:   auth-service.default.svc.cluster.local
+Address: 10.96.164.145
+```
+
+### Does this mean Kubernetes DNS is broken?
+
+**No.**
+
+This is normal behavior when using the BusyBox `nslookup` utility that is included in many Alpine-based Docker images.
+
+BusyBox attempts to resolve the service name using several search domains.
+
+It tries:
+
+```text
+auth-service.cluster.local
+```
+
+❌ Not found
+
+Then:
+
+```text
+auth-service.svc.cluster.local
+```
+
+❌ Not found
+
+Finally:
+
+```text
+auth-service.default.svc.cluster.local
+```
+
+✅ Successfully resolved
+
+```text
+Name:   auth-service.default.svc.cluster.local
+Address: 10.96.164.145
+```
+
+The earlier `NXDOMAIN` messages simply indicate that those shorter search paths do not exist. The final successful lookup confirms that Kubernetes DNS is working correctly.
+
+---
+
+## Verify DNS Configuration
+
+Inside any Pod, run:
+
+```bash
+cat /etc/resolv.conf
+```
+
+Expected output:
+
+```text
+search default.svc.cluster.local svc.cluster.local cluster.local
+nameserver 10.96.0.10
+```
+
+This confirms that the Pod is configured to use the Kubernetes DNS server.
+
+---
+
+## Verify Service Connectivity
+
+DNS resolution alone is not enough. You should also verify that the service is reachable.
+
+Run:
+
+```bash
+wget -qO- http://auth-service:3000/auth
+```
+
+or, if `curl` is available:
+
+```bash
+curl http://auth-service:3000/auth
+```
+
+Expected response:
+
+```text
+Auth Service Running
+```
+
+If this request succeeds, then:
+
+- ✅ Kubernetes DNS is working.
+- ✅ The ClusterIP Service is functioning.
+- ✅ The Auth Pod is reachable.
+- ✅ Service-to-Service communication is configured correctly.
+
+---
+
+> **Note:** Seeing `NXDOMAIN` before a successful lookup is expected when using BusyBox `nslookup`. As long as the service ultimately resolves to an address such as `auth-service.default.svc.cluster.local` and your application is reachable, Kubernetes DNS is functioning correctly.
+
 # 🚀 What's Next?
 
 In **Chapter 6 – Kubernetes Ingress & External Access**, we will:
