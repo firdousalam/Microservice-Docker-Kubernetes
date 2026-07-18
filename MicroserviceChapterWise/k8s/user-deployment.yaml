@@ -24,3 +24,22 @@ spec:
 
           ports:
             - containerPort: 3001
+
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: microservice-secret
+                  key: MONGO_URI
+
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: microservice-secret
+                  key: JWT_SECRET
+
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: microservice-config
+                  key: NODE_ENV
