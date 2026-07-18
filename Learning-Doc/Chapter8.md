@@ -873,3 +873,315 @@ This authentication mechanism forms the foundation for securing communication be
 In **Chapter 9 – Health Checks, Readiness & Liveness Probes**, we'll make our application production-ready by adding `/health` endpoints to each service and configuring Kubernetes **readiness** and **liveness probes**.
 
 These probes allow Kubernetes to automatically detect unhealthy containers, restart failed Pods, and ensure traffic is routed only to healthy instances.
+
+
+# UPDATE 
+
+
+# Chapter 8 – JWT Authentication & Service-to-Service Security
+
+## Building Production-Ready Node.js Microservices using Docker, Kubernetes, Helm & CI/CD
+
+---
+
+# Chapter Overview
+
+At this stage our application can:
+
+* Run inside Kubernetes
+* Communicate using Kubernetes DNS
+* Connect to MongoDB Atlas
+* Use ConfigMaps and Secrets
+* Be accessed through NGINX Ingress
+
+However, our APIs are still public.
+
+Anyone who knows the URL can access the User or Product Service.
+
+To secure our application, we'll implement **JWT (JSON Web Token) Authentication**.
+
+The Auth Service will generate a JWT after successful login.
+
+The User Service will verify that JWT before returning protected data.
+
+---
+
+# JWT Authentication Flow
+
+```text
+                Browser
+
+                    │
+
+     POST /auth/login
+
+                    │
+
+                    ▼
+
+             NGINX Ingress
+
+                    │
+
+              POST /login
+
+                    │
+
+                    ▼
+
+             Auth Service
+
+                    │
+
+            Generate JWT
+
+                    │
+
+                    ▼
+
+               JWT Token
+
+                    │
+
+Authorization: Bearer <token>
+
+                    │
+
+                    ▼
+
+             NGINX Ingress
+
+                    │
+
+            GET /profile
+
+                    │
+
+                    ▼
+
+             User Service
+
+                    │
+
+          JWT Middleware
+
+                    │
+
+            Verify Token
+
+          ┌──────────────┐
+          │              │
+        Valid         Invalid
+          │              │
+          ▼              ▼
+
+ Protected Data     401 Unauthorized
+```
+
+---
+
+# Auth Service
+
+```javascript
+app.get("/", (req, res) => {
+    res.send("Auth Service Running");
+});
+
+app.post("/login", (req, res) => {
+
+    const { username, password } = req.body;
+
+    if (
+        username === "admin" &&
+        password === "password123"
+    ) {
+
+        const token = jwt.sign(
+            { username },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: "1h"
+            }
+        );
+
+        return res.json({
+            token
+        });
+
+    }
+
+    return res.status(401).json({
+        message: "Invalid Credentials"
+    });
+
+});
+
+app.get("/health", (req, res) => {
+    res.json({
+        service: "Auth Service",
+        status: "UP"
+    });
+});
+```
+
+---
+
+# User Service
+
+```javascript
+app.get("/", (req, res) => {
+    res.send("User Service Running");
+});
+
+app.get(
+    "/profile",
+    authMiddleware,
+    (req, res) => {
+
+        res.json({
+            message: "Welcome",
+            user: req.user
+        });
+
+    }
+);
+
+app.get("/health", (req, res) => {
+    res.json({
+        service: "User Service",
+        status: "UP"
+    });
+});
+```
+
+---
+
+# Testing with Postman
+
+## Login
+
+**Request**
+
+```http
+POST http://localhost:8080/auth/login
+```
+
+Headers
+
+```text
+Content-Type: application/json
+```
+
+Body
+
+```json
+{
+  "username": "admin",
+  "password": "password123"
+}
+```
+
+Expected Response
+
+```json
+{
+  "token": "eyJhbGc..."
+}
+```
+
+---
+
+## Access Protected API
+
+**Request**
+
+```http
+GET http://localhost:8080/user/profile
+```
+
+Headers
+
+```text
+Authorization: Bearer <JWT_TOKEN>
+```
+
+Expected Response
+
+```json
+{
+  "message": "Welcome",
+  "user": {
+    "username": "admin"
+  }
+}
+```
+
+---
+
+# Common Issue We Solved
+
+## Cannot POST /auth/login
+
+### Cause
+
+NGINX Ingress rewrites:
+
+```text
+/auth/login
+```
+
+to:
+
+```text
+/login
+```
+
+but the Auth Service route was:
+
+```javascript
+app.post("/auth/login")
+```
+
+As a result, Express could not find the route.
+
+---
+
+### Solution
+
+Keep the Ingress rewrite configuration and update the Auth Service to:
+
+```javascript
+app.post("/login")
+```
+
+This allows the service to remain independent of external URL prefixes and follows production best practices.
+
+---
+
+# Best Practices
+
+* Store JWT secrets in Kubernetes Secrets.
+* Never hardcode secrets.
+* Always validate JWTs in middleware.
+* Use HTTPS in production.
+* Keep token expiration short.
+* Use password hashing (bcrypt) in real applications.
+* Include only necessary data in the JWT payload.
+
+---
+
+# Verify Before Moving On
+
+* ✅ Auth Service generates JWTs.
+* ✅ JWT Secret is stored in Kubernetes Secrets.
+* ✅ User Service validates JWTs.
+* ✅ Protected APIs require authentication.
+* ✅ Unauthorized requests return **401 Unauthorized**.
+* ✅ Valid JWTs return **200 OK**.
+* ✅ Updated Docker images are successfully deployed.
+
+---
+
+# Chapter Summary
+
+In this chapter, we implemented JWT-based authentication for our microservices. The Auth Service authenticates users and generates signed JWTs, while the User Service validates those tokens before granting access to protected APIs. By combining Kubernetes Secrets, NGINX Ingress path rewriting, and JWT middleware, we implemented a production-ready authentication flow suitable for modern cloud-native applications.

@@ -596,3 +596,406 @@ In **Chapter 7 – MongoDB Atlas, ConfigMaps & Secrets**, we will:
 Congratulations! 🎉
 
 You have successfully configured Kubernetes networking and exposed your microservices through a single NGINX Ingress entry point. Your application is now accessible from a browser and is ready for secure configuration using ConfigMaps and Secrets.
+
+
+# UPDATED 
+# Chapter 6 – NGINX Ingress & Networking
+
+## Building Production-Ready Node.js Microservices using Docker, Kubernetes, Helm & CI/CD
+
+---
+
+# Chapter Overview
+
+At this stage, our three Node.js microservices are successfully running inside Kubernetes.
+
+Each service has:
+
+* A Deployment
+* A ClusterIP Service
+* Internal Kubernetes DNS
+* Independent Pods
+
+However, ClusterIP Services are only accessible inside the Kubernetes cluster.
+
+We need a single public entry point so users can access our services from a browser or Postman.
+
+To solve this, we'll use the **NGINX Ingress Controller**.
+
+By the end of this chapter, you'll have:
+
+* NGINX Ingress Controller installed
+* URL-based routing
+* One entry point for all services
+* Clean production URLs
+* Kubernetes path rewriting
+
+---
+
+# Why Do We Need Ingress?
+
+Without Ingress:
+
+```text
+Browser
+
+↓
+
+Auth Service
+
+Browser
+
+↓
+
+User Service
+
+Browser
+
+↓
+
+Product Service
+```
+
+Each service requires its own IP or LoadBalancer.
+
+Managing multiple public endpoints becomes difficult.
+
+---
+
+# With Ingress
+
+```text
+                Browser
+                    │
+                    ▼
+             NGINX Ingress
+                    │
+      ┌─────────────┼─────────────┐
+      ▼             ▼             ▼
+   Auth          User         Product
+```
+
+Only one public endpoint is exposed.
+
+Ingress forwards requests to the correct service.
+
+---
+
+# URL Routing
+
+Users access:
+
+```text
+http://localhost:8080/auth
+
+http://localhost:8080/user
+
+http://localhost:8080/product
+```
+
+Internally Kubernetes routes them to:
+
+```text
+Auth Service
+
+User Service
+
+Product Service
+```
+
+---
+
+# Path Rewriting
+
+This project uses **NGINX path rewriting**.
+
+Example:
+
+```text
+Browser Request
+
+POST /auth/login
+
+↓
+
+NGINX Ingress
+
+↓
+
+Rewrites to
+
+POST /login
+
+↓
+
+Auth Service
+```
+
+Likewise,
+
+```text
+GET /user/profile
+
+↓
+
+GET /profile
+
+↓
+
+User Service
+```
+
+This keeps the microservices independent of public URL prefixes.
+
+---
+
+# Ingress Configuration
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: microservice-ingress
+
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+
+spec:
+  ingressClassName: nginx
+
+  rules:
+    - host: localhost
+
+      http:
+        paths:
+
+          - path: /auth(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 3000
+
+          - path: /user(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 3001
+
+          - path: /product(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: product-service
+                port:
+                  number: 3002
+```
+
+---
+
+# Why Rewrite URLs?
+
+Instead of writing:
+
+```javascript
+app.post("/auth/login")
+```
+
+we write:
+
+```javascript
+app.post("/login")
+```
+
+Instead of:
+
+```javascript
+app.get("/user/profile")
+```
+
+we write:
+
+```javascript
+app.get("/profile")
+```
+
+Ingress automatically removes the service prefix before forwarding the request.
+
+### Advantages
+
+* Cleaner APIs
+* Easier to maintain
+* Independent microservices
+* Production-standard architecture
+* No hardcoded service prefixes
+
+---
+
+# Internal Service Routes
+
+## Auth Service
+
+```text
+GET /
+
+POST /login
+
+GET /health
+```
+
+## User Service
+
+```text
+GET /
+
+GET /profile
+
+GET /health
+```
+
+## Product Service
+
+```text
+GET /
+
+GET /health
+```
+
+---
+
+# External URLs
+
+| Browser URL     | Internal Route |
+| --------------- | -------------- |
+| `/auth`         | `/`            |
+| `/auth/login`   | `/login`       |
+| `/user`         | `/`            |
+| `/user/profile` | `/profile`     |
+| `/product`      | `/`            |
+
+---
+
+# Install NGINX Ingress Controller
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+```
+
+Verify installation:
+
+```bash
+kubectl get pods -n ingress-nginx
+```
+
+---
+
+# Port Forward
+
+```bash
+kubectl port-forward service/ingress-nginx-controller 8080:80 -n ingress-nginx
+```
+
+---
+
+# Verify Routing
+
+```text
+GET http://localhost:8080/auth
+
+GET http://localhost:8080/user
+
+GET http://localhost:8080/product
+```
+
+---
+
+# Common Issues We Solved
+
+## Cannot POST /auth/login
+
+### Cause
+
+Express route was defined as:
+
+```javascript
+app.post("/auth/login")
+```
+
+while Ingress rewrote the request to:
+
+```text
+POST /login
+```
+
+### Solution
+
+```javascript
+app.post("/login")
+```
+
+---
+
+## Cannot GET /user/profile
+
+### Cause
+
+The User Service route was defined as:
+
+```javascript
+app.get("/user/profile")
+```
+
+Ingress forwarded the request as:
+
+```text
+GET /profile
+```
+
+### Solution
+
+```javascript
+app.get("/profile")
+```
+
+---
+
+## Ingress Not Working
+
+Verify:
+
+```bash
+kubectl get ingress
+
+kubectl describe ingress
+
+kubectl get pods -n ingress-nginx
+```
+
+---
+
+# Best Practices
+
+* Keep microservices unaware of external URL prefixes.
+* Use ClusterIP Services internally.
+* Let Ingress handle routing.
+* Use rewrite annotations for clean APIs.
+* Keep routing logic inside Kubernetes instead of application code.
+
+---
+
+# Chapter Summary
+
+In this chapter we:
+
+* Installed the NGINX Ingress Controller.
+* Configured path-based routing.
+* Implemented URL rewriting.
+* Exposed all microservices through a single entry point.
+* Followed production-ready Kubernetes networking practices.
+
+---
