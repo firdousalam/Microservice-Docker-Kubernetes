@@ -1,43 +1,51 @@
-Chapter 10 – Scaling, Horizontal Pod Autoscaler (HPA) & Rolling Updates
-Building Production-Ready Node.js Microservices using Docker, Kubernetes, Helm & CI/CD
-Chapter Overview
+# Chapter 10 – Scaling, Horizontal Pod Autoscaler (HPA) & Rolling Updates
+
+# Building Production-Ready Node.js Microservices using Docker, Kubernetes, Helm & CI/CD
+
+---
+
+# Chapter Overview
 
 Our microservices are now production-ready in terms of:
 
-✅ Docker Containers
-✅ Kubernetes Deployments
-✅ Services
-✅ NGINX Ingress
-✅ MongoDB Atlas
-✅ ConfigMaps & Secrets
-✅ JWT Authentication
-✅ Health Checks
+- ✅ Docker Containers
+- ✅ Kubernetes Deployments
+- ✅ Services
+- ✅ NGINX Ingress
+- ✅ MongoDB Atlas
+- ✅ ConfigMaps & Secrets
+- ✅ JWT Authentication
+- ✅ Health Checks
 
-However, production systems must also handle increasing traffic and application updates without downtime.
+However, production systems must also handle increasing traffic and application updates **without downtime**.
 
 Imagine your application receives:
 
-100 users today
-10,000 users tomorrow
-100,000 users next month
+- 100 users today
+- 10,000 users tomorrow
+- 100,000 users next month
 
-A single Pod cannot handle unlimited traffic. Kubernetes solves this with horizontal scaling, where multiple Pod replicas run behind a Service.
+A single Pod cannot handle unlimited traffic. Kubernetes solves this with **horizontal scaling**, where multiple Pod replicas run behind a Service.
 
-In addition, deploying a new application version should not interrupt users. Kubernetes provides Rolling Updates to replace Pods gradually and Rollbacks to restore the previous version if something goes wrong.
+In addition, deploying a new application version should not interrupt users. Kubernetes provides **Rolling Updates** to replace Pods gradually and **Rollbacks** to restore the previous version if something goes wrong.
 
 By the end of this chapter, you'll learn how to:
 
-Scale Deployments manually
-Configure a Horizontal Pod Autoscaler (HPA)
-Understand Metrics Server requirements
-Perform Rolling Updates
-Roll back failed deployments
-Monitor rollout status
-Troubleshoot common scaling issues
-Scaling in Kubernetes
+- Scale Deployments manually
+- Configure a Horizontal Pod Autoscaler (HPA)
+- Understand Metrics Server requirements
+- Perform Rolling Updates
+- Roll back failed deployments
+- Monitor rollout status
+- Troubleshoot common scaling issues
 
-Instead of increasing CPU or memory for one Pod (vertical scaling), Kubernetes commonly uses horizontal scaling.
+---
 
+# Scaling in Kubernetes
+
+Instead of increasing CPU or memory for one Pod (**vertical scaling**), Kubernetes commonly uses **horizontal scaling**.
+
+```text
                 Browser Requests
                        │
                        ▼
@@ -46,73 +54,107 @@ Instead of increasing CPU or memory for one Pod (vertical scaling), Kubernetes c
       ┌────────────────┼────────────────┐
       ▼                ▼                ▼
    Auth Pod 1      Auth Pod 2      Auth Pod 3
+```
 
 The Service automatically load-balances requests across all healthy Pods.
 
-Manual Scaling
+### Manual Scaling
 
 Initially:
 
+```text
 Replicas = 1
+```
 
 After scaling:
 
+```text
 Replicas = 3
-Step 1 – Check the Current Deployment
+```
+
+---
+
+# Step 1 – Check the Current Deployment
 
 View Deployments:
 
+```bash
 kubectl get deployments
+```
 
 Example:
 
+```text
 NAME                  READY   UP-TO-DATE   AVAILABLE
 
 auth-deployment       1/1     1            1
 user-deployment       1/1     1            1
 product-deployment    1/1     1            1
-Step 2 – Scale the Auth Service
+```
+
+---
+
+# Step 2 – Scale the Auth Service
 
 Run:
 
+```bash
 kubectl scale deployment auth-deployment --replicas=3
+```
 
 Expected output:
 
+```text
 deployment.apps/auth-deployment scaled
-Step 3 – Verify the Pods
+```
+
+---
+
+# Step 3 – Verify the Pods
+
+```bash
 kubectl get pods
+```
 
 Expected:
 
+```text
 NAME                                  READY
 
 auth-deployment-xxxxx                 1/1
-
 auth-deployment-yyyyy                 1/1
-
 auth-deployment-zzzzz                 1/1
-
 user-deployment-xxxxx                 1/1
-
 product-deployment-xxxxx              1/1
+```
 
 Three Auth Pods should now be running.
 
-Step 4 – Verify the Deployment
+---
+
+# Step 4 – Verify the Deployment
+
+```bash
 kubectl get deployment auth-deployment
+```
 
 Expected:
 
+```text
 READY
 
 3/3
-How Load Balancing Works
+```
 
-You do not need to change your Service.
+---
 
-The Service automatically distributes traffic.
+# How Load Balancing Works
 
+You do **not** need to modify your Kubernetes Service.
+
+The Service automatically distributes requests among all healthy Pods.
+
+```text
                Browser
                   │
                   ▼
@@ -121,36 +163,48 @@ The Service automatically distributes traffic.
         ┌─────────┼─────────┐
         ▼         ▼         ▼
       Pod 1     Pod 2     Pod 3
-Scaling Back Down
+```
+
+---
+
+# Scaling Back Down
 
 Reduce the replicas:
 
+```bash
 kubectl scale deployment auth-deployment --replicas=1
+```
 
 Verify:
 
+```bash
 kubectl get pods
+```
 
 Only one Auth Pod should remain.
 
-Horizontal Pod Autoscaler (HPA)
+---
+
+# Horizontal Pod Autoscaler (HPA)
 
 Manual scaling works, but it requires human intervention.
 
-A Horizontal Pod Autoscaler (HPA) automatically adjusts the number of Pods based on resource usage, such as CPU utilization.
+A **Horizontal Pod Autoscaler (HPA)** automatically adjusts the number of Pods based on CPU utilization.
 
 Example:
 
-CPU Usage
+| CPU Usage | Pods |
+|-----------|------|
+| 20% | 2 |
+| 50% | 3 |
+| 70% | 5 |
+| 90% | 8 |
 
-20% → 2 Pods
+---
 
-50% → 3 Pods
+# How HPA Works
 
-70% → 5 Pods
-
-90% → 8 Pods
-How HPA Works
+```text
                  Metrics Server
                        │
                        ▼
@@ -160,93 +214,127 @@ How HPA Works
                        │
                        ▼
           Increase Replicas from 2 → 5
-Step 5 – Install Metrics Server
+```
 
-HPA requires the Kubernetes Metrics Server.
+---
 
-Verify if it's installed:
+# Step 5 – Install Metrics Server
 
+HPA requires the Kubernetes **Metrics Server**.
+
+Verify:
+
+```bash
 kubectl get deployment metrics-server -n kube-system
+```
 
-If it is not installed, apply the official manifest:
+If it isn't installed:
 
+```bash
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
 
-Wait until:
+Verify:
 
+```bash
 kubectl get pods -n kube-system
+```
 
-shows:
+Expected:
 
-metrics-server
+```text
+metrics-server     Running
+```
 
-Running
-Step 6 – Verify Metrics
+---
+
+# Step 6 – Verify Metrics
+
+Check Node metrics:
+
+```bash
 kubectl top nodes
+```
 
 Example:
 
-NAME
+```text
+NAME               CPU      MEMORY
 
-CPU
+docker-desktop     12%      42%
+```
 
-MEMORY
+Check Pod metrics:
 
-docker-desktop
-
-12%
-
-42%
-
-Check Pods:
-
+```bash
 kubectl top pods
+```
 
-If these commands work, HPA can collect CPU metrics.
+If both commands work successfully, HPA can collect CPU metrics.
 
-Step 7 – Configure Resource Requests and Limits
+---
 
-HPA uses CPU utilization relative to the Pod's resource requests. Therefore, define CPU and memory requests in your Deployment.
+# Step 7 – Configure Resource Requests & Limits
 
-Example (auth-deployment.yaml):
+HPA calculates CPU utilization relative to the Pod's CPU requests.
 
+Example:
+
+```yaml
 resources:
   requests:
     cpu: "100m"
     memory: "128Mi"
+
   limits:
     cpu: "500m"
     memory: "512Mi"
+```
 
-Without these values, the HPA cannot calculate CPU utilization correctly.
+Apply:
 
-Apply the updated Deployment:
-
+```bash
 kubectl apply -f auth-deployment.yaml
-Step 8 – Create the HPA
+```
+
+---
+
+# Step 8 – Create the HPA
 
 During our implementation, the old command:
 
+```bash
 kubectl autoscale deployment auth-deployment --cpu-percent=70 --min=2 --max=10
+```
 
 returned:
 
+```text
 Flag --cpu-percent has been deprecated
+```
 
-The correct command for newer Kubernetes versions is:
+Use the new syntax:
 
+```bash
 kubectl autoscale deployment auth-deployment \
   --cpu=70% \
   --min=2 \
   --max=10
+```
 
 Expected:
 
+```text
 horizontalpodautoscaler.autoscaling/auth-deployment created
-Issue We Encountered
+```
 
-When we ran the command again, Kubernetes returned:
+---
 
+# Issue We Encountered
+
+Running the command again returned:
+
+```text
 Error from server (AlreadyExists):
 
 horizontalpodautoscalers.autoscaling
@@ -254,71 +342,97 @@ horizontalpodautoscalers.autoscaling
 "auth-deployment"
 
 already exists
-Cause
+```
 
-The HPA had already been created.
+### Cause
 
-Solution
+The HPA already existed.
 
-List the HPAs:
+### Solution
 
+View existing HPAs:
+
+```bash
 kubectl get hpa
+```
 
 Describe it:
 
+```bash
 kubectl describe hpa auth-deployment
+```
 
-If you need to recreate it:
+Delete if required:
 
+```bash
 kubectl delete hpa auth-deployment
+```
 
-Then create it again.
+Then recreate it.
 
-Step 9 – Monitor the HPA
+---
 
-View the autoscaler:
+# Step 9 – Monitor the HPA
 
+```bash
 kubectl get hpa
+```
 
 Example:
 
+```text
 NAME                REFERENCE                    TARGETS   MINPODS   MAXPODS
 
 auth-deployment     Deployment/auth-deployment  25%/70%   2         10
+```
 
-The TARGETS column shows current CPU usage versus the target.
+The **TARGETS** column shows current CPU usage versus the configured target.
 
-Step 10 – Generate Load (Optional)
+---
 
-To observe autoscaling, generate CPU load.
+# Step 10 – Generate Load (Optional)
 
-For learning purposes, you can use tools such as:
+To observe autoscaling, generate traffic.
 
-ApacheBench (ab)
-hey
-wrk
+Popular tools:
+
+- ApacheBench (ab)
+- hey
+- wrk
 
 Example:
 
+```bash
 hey -n 10000 -c 100 http://localhost:8080/auth
+```
 
-As CPU usage increases, the HPA should create additional Pods.
+As CPU utilization increases, HPA should automatically create additional Pods.
 
-Rolling Updates
+---
 
-A Rolling Update replaces Pods gradually, ensuring that the application remains available.
+# Rolling Updates
+
+A Rolling Update replaces Pods gradually without downtime.
 
 Current version:
 
+```text
 auth-service:v5
+```
 
 New version:
 
+```text
 auth-service:v6
+```
 
-Kubernetes starts new Pods before terminating the old ones.
+Kubernetes creates new Pods before terminating old ones.
 
-Rolling Update Flow
+---
+
+# Rolling Update Flow
+
+```text
 Old Pods (v5)
 
 ▼
@@ -336,191 +450,298 @@ Old Pod removed
 ▼
 
 Repeat until complete
-Step 11 – Build a New Image
+```
+
+---
+
+# Step 11 – Build a New Image
+
+```bash
 docker build -t firdousalam2058/auth-service:v6 .
+```
 
 Push:
 
+```bash
 docker push firdousalam2058/auth-service:v6
-Step 12 – Update the Deployment
+```
 
-Edit auth-deployment.yaml:
+---
 
+# Step 12 – Update the Deployment
+
+Update the Deployment YAML:
+
+```yaml
 image: firdousalam2058/auth-service:v6
+```
 
 Apply:
 
+```bash
 kubectl apply -f auth-deployment.yaml
+```
 
-Alternatively, update the image directly:
+Or update directly:
 
+```bash
 kubectl set image deployment/auth-deployment \
 auth=firdousalam2058/auth-service:v6
-Step 13 – Monitor the Rollout
+```
+
+---
+
+# Step 13 – Monitor the Rollout
+
+```bash
 kubectl rollout status deployment auth-deployment
+```
 
 Expected:
 
+```text
 deployment "auth-deployment" successfully rolled out
+```
 
 Watch the Pods:
 
+```bash
 kubectl get pods -w
+```
 
-You'll see new Pods created before the old ones are terminated.
+You will see new Pods created before old Pods are terminated.
 
-Step 14 – Roll Back a Deployment
+---
 
-If the new version contains a bug, restore the previous version:
+# Step 14 – Roll Back a Deployment
 
+If the new version contains a bug:
+
+```bash
 kubectl rollout undo deployment auth-deployment
+```
 
-Verify:
+Verify the rollout history:
 
+```bash
 kubectl rollout history deployment auth-deployment
-Step 15 – Restart a Deployment
+```
 
-If you update a Secret or ConfigMap, restart the Pods:
+---
 
+# Step 15 – Restart a Deployment
+
+When ConfigMaps or Secrets are updated:
+
+```bash
 kubectl rollout restart deployment auth-deployment
-Useful Commands
+```
 
-View Deployments:
+---
 
+# Useful Commands
+
+### View Deployments
+
+```bash
 kubectl get deployments
+```
 
-Scale manually:
+### Scale Manually
 
+```bash
 kubectl scale deployment auth-deployment --replicas=3
+```
 
-View Pods:
+### View Pods
 
+```bash
 kubectl get pods
+```
 
-View HPAs:
+### View HPAs
 
+```bash
 kubectl get hpa
+```
 
-Describe an HPA:
+### Describe an HPA
 
+```bash
 kubectl describe hpa auth-deployment
+```
 
-Delete an HPA:
+### Delete an HPA
 
+```bash
 kubectl delete hpa auth-deployment
+```
 
-Monitor rollout:
+### Monitor Rollout
 
+```bash
 kubectl rollout status deployment auth-deployment
+```
 
-View rollout history:
+### View Rollout History
 
+```bash
 kubectl rollout history deployment auth-deployment
+```
 
-Undo a rollout:
+### Undo a Rollout
 
+```bash
 kubectl rollout undo deployment auth-deployment
+```
 
-Restart a Deployment:
+### Restart a Deployment
 
+```bash
 kubectl rollout restart deployment auth-deployment
-Common Issues We Encountered
-1. --cpu-percent Deprecated
+```
 
-We encountered:
+---
 
+# Common Issues We Encountered
+
+## 1. `--cpu-percent` Deprecated
+
+Error:
+
+```text
 Flag --cpu-percent has been deprecated
+```
 
-Solution
+### Solution
 
-Use:
-
+```bash
 kubectl autoscale deployment auth-deployment \
 --cpu=70% \
 --min=2 \
 --max=10
-2. AlreadyExists
+```
 
-We encountered:
+---
 
+## 2. HPA Already Exists
+
+Error:
+
+```text
 horizontalpodautoscalers.autoscaling
 
 already exists
+```
 
-Solution
+### Solution
 
-Check the existing HPA:
-
+```bash
 kubectl get hpa
+kubectl delete hpa auth-deployment
+```
 
-Delete and recreate it if necessary.
+Recreate the HPA if necessary.
 
-3. HPA Shows <unknown> for CPU
+---
 
-Cause
+## 3. HPA Shows `<unknown>` for CPU
 
-Metrics Server isn't running.
-CPU requests are missing from the Deployment.
+### Cause
 
-Solution
+- Metrics Server isn't running.
+- CPU requests are missing.
 
-Install the Metrics Server.
-Add resources.requests.cpu to the Deployment.
-4. New Pods Never Start
+### Solution
 
-Cause
+- Install Metrics Server.
+- Configure `resources.requests.cpu`.
 
-Image doesn't exist in Docker Hub.
-Incorrect image tag.
-Failed image pull.
+---
 
-Solution
+## 4. New Pods Never Start
 
-Verify the image:
+### Cause
 
+- Docker image not pushed.
+- Incorrect image tag.
+- Failed image pull.
+
+### Solution
+
+Push the image:
+
+```bash
 docker push firdousalam2058/auth-service:v6
+```
 
-Check Pod events:
+Inspect Pod events:
 
+```bash
 kubectl describe pod <pod-name>
-5. Rolling Update Gets Stuck
+```
 
-Cause
+---
 
-The new Pods fail their readiness probe.
+## 5. Rolling Update Gets Stuck
 
-Solution
+### Cause
 
-Check:
+The new Pods fail their Readiness Probe.
 
+### Solution
+
+Inspect logs:
+
+```bash
 kubectl logs <pod-name>
+
 kubectl describe pod <pod-name>
+```
 
-Resolve the issue or roll back the Deployment.
+Fix the issue or roll back the Deployment.
 
-Best Practices
-Use HPA instead of manual scaling in production.
-Always define CPU and memory requests and limits.
-Verify Metrics Server before configuring HPA.
-Monitor every rollout with kubectl rollout status.
-Test new versions in a staging environment before production.
-Keep previous Deployment revisions available for quick rollback.
-Verify Before Moving On
+---
 
-Before continuing, ensure:
+# Best Practices
 
-✅ Manual scaling works.
-✅ Multiple replicas are created successfully.
-✅ The Service load-balances traffic.
-✅ Metrics Server is running.
-✅ The HPA is created and visible with kubectl get hpa.
-✅ Resource requests and limits are configured.
-✅ Rolling updates complete successfully.
-✅ Rollbacks restore the previous version when required.
-Chapter Summary
+- Use HPA instead of manual scaling in production.
+- Always configure CPU and memory requests.
+- Verify Metrics Server before creating HPAs.
+- Monitor every rollout.
+- Test new versions in a staging environment.
+- Keep previous Deployment revisions for quick rollback.
 
-In this chapter, we learned how to scale Kubernetes Deployments manually and automatically using the Horizontal Pod Autoscaler. We configured CPU resource requests, addressed the HPA issues encountered during implementation, and explored rolling updates and rollbacks to achieve zero-downtime deployments.
+---
 
-What's Next?
+# Verify Before Moving On
 
-In Chapter 11 – Logging, Monitoring with Prometheus & Grafana, we'll learn how to collect application logs, monitor Kubernetes clusters with Prometheus, visualize metrics in Grafana, and create dashboards to monitor CPU, memory, request rates, and Pod health in real time. This is a key step toward operating microservices in a production environment.
+Ensure:
+
+- ✅ Manual scaling works.
+- ✅ Multiple replicas are created.
+- ✅ Services load-balance traffic.
+- ✅ Metrics Server is running.
+- ✅ HPA is visible using `kubectl get hpa`.
+- ✅ Resource requests and limits are configured.
+- ✅ Rolling updates complete successfully.
+- ✅ Rollbacks restore previous versions.
+
+---
+
+# Chapter Summary
+
+In this chapter, we learned how to scale Kubernetes Deployments manually and automatically using the **Horizontal Pod Autoscaler (HPA)**. We configured CPU resource requests, resolved common HPA issues encountered during implementation, and explored Rolling Updates and Rollbacks to achieve zero-downtime deployments.
+
+---
+
+# What's Next?
+
+In **Chapter 11 – Logging, Monitoring with Prometheus & Grafana**, we'll learn how to:
+
+- Collect application logs
+- Monitor Kubernetes clusters with Prometheus
+- Visualize metrics in Grafana
+- Build dashboards for CPU, memory, request rates, and Pod health
+
+These tools are essential for operating microservices in a production environment.
