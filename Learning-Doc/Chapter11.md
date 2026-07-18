@@ -399,6 +399,32 @@ Install the monitoring stack:
 helm install prometheus prometheus-community/kube-prometheus-stack
 ```
 
+helm repo list
+NAME                    URL
+prometheus-community    https://prometheus-community.github.io/helm-charts
+
+Great! The repository is configured correctly. ✅
+
+Now let's verify that Helm can see the Prometheus chart.
+
+Step 1: Search for the chart
+
+Run:
+
+helm search repo prometheus-community/kube-prometheus-stack
+
+You should see output similar to:
+
+NAME                                        CHART VERSION   APP VERSION
+prometheus-community/kube-prometheus-stack  xx.x.x          xx.x.x
+Step 2: Install the chart
+
+If the search succeeds, run:
+
+helm install prometheus prometheus-community/kube-prometheus-stack
+
+
+
 Verify:
 
 ```bash
@@ -441,6 +467,30 @@ Port-forward Grafana:
 ```bash
 kubectl port-forward svc/prometheus-grafana 3000:80
 ```
+
+generally port 3000 taken by some other servive
+you can use another free port
+kubectl port-forward svc/prometheus-grafana 3001:80
+
+it may have different passport than default 
+
+You're using PowerShell, so the Linux base64 command isn't available. Use the PowerShell equivalent instead.
+
+Option 1 (Recommended): Decode the password in PowerShell
+
+Run:
+
+[System.Text.Encoding]::UTF8.GetString(
+    [System.Convert]::FromBase64String(
+        (kubectl get secret prometheus-grafana -o jsonpath="{.data.admin-password}")
+    )
+)
+
+This will print the Grafana admin password.
+
+The default username is:
+
+admin
 
 Open:
 
