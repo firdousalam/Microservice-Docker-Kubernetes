@@ -271,6 +271,47 @@ kubectl top pods
 ```
 
 If both commands work successfully, HPA can collect CPU metrics.
+```bash
+ kubectl top pods
+ ```
+error: Metrics API not available
+
+```bash
+ kubectl top nodes
+ ```
+error: Metrics API not available
+
+Step 1: Delete the current Metrics Server
+kubectl delete deployment metrics-server -n kube-system
+
+Wait until it is deleted:
+
+kubectl get deployment -n kube-system
+Step 2: Download the official manifest
+curl -LO https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+Or on Windows PowerShell:
+
+Invoke-WebRequest `
+-Uri https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml `
+-OutFile components.yaml
+Step 3: Edit components.yaml
+
+Find the args: section and replace it with:
+
+args:
+- --cert-dir=/tmp
+- --secure-port=10250
+- --kubelet-preferred-address-types=Hostname,InternalDNS,InternalIP,ExternalDNS,ExternalIP
+- --kubelet-use-node-status-port
+- --metric-resolution=15s
+- --kubelet-insecure-tls
+Step 4: Apply it
+kubectl apply -f components.yaml
+Step 5: Verify
+kubectl get pods -n kube-system
+kubectl logs -n kube-system -l k8s-app=metrics-server
+kubectl top nodes
 
 ---
 
