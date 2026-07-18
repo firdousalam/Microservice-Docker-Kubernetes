@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: user
-          image: firdousalam2058/user-service:v1
+          image: firdousalam2058/user-service:v6
           imagePullPolicy: Always
 
           ports:
