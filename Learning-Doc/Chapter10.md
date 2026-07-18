@@ -311,8 +311,21 @@ kubectl apply -f components.yaml
 Step 5: Verify
 kubectl get pods -n kube-system
 kubectl logs -n kube-system -l k8s-app=metrics-server
-kubectl top nodes
 
+
+
+Check Node metrics:
+
+```bash
+kubectl top nodes
+```
+
+Example:
+
+```text
+NAME               CPU      MEMORY
+
+docker-desktop     12%      42%
 ---
 
 # Step 7 – Configure Resource Requests & Limits
