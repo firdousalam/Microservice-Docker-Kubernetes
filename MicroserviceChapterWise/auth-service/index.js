@@ -39,7 +39,12 @@ app.post("/login", (req, res) => {
                 expiresIn: "1h"
             }
         );
-
+        console.log(JSON.stringify({
+            service: "Auth Service",
+            event: "User Login",
+            status: "SUCCESS",
+            timestamp: new Date()
+        }));
         return res.json({
             token
         });

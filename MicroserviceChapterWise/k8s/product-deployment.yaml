@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: product
-          image: firdousalam2058/product-service:v6
+          image: firdousalam2058/product-service:v7
           imagePullPolicy: Always
 
           ports:

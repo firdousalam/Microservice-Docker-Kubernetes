@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: auth
-          image: firdousalam2058/auth-service:v6
+          image: firdousalam2058/auth-service:v7
           imagePullPolicy: Always
 
           ports:

@@ -180,6 +180,14 @@ Repeat for:
 
 Update your Kubernetes Deployments and apply them.
 
+kubectl apply -f user-deployment.yaml                        
+deployment.apps/user-deployment configured
+PS C:\Users\techn\TechnophileFirdous\Microservice-Docker-Kubernetes\MicroserviceChapterWise\k8s> kubectl apply -f product-deployment.yaml                     
+deployment.apps/product-deployment configured
+PS C:\Users\techn\TechnophileFirdous\Microservice-Docker-Kubernetes\MicroserviceChapterWise\k8s> kubectl apply -f auth-deployment.yaml                        
+deployment.apps/auth-deployment configured
+PS C:\Users\techn\TechnophileFirdous\Microservice-Docker-Kubernetes\MicroserviceChapterWise\k8s> kubectl port-forward -n ingress-nginx service/ingress-nginx-controller 8080:80
+
 ---
 
 # Step 3 – View Pod Logs

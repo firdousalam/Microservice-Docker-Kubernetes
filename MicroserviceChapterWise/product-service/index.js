@@ -12,6 +12,12 @@ mongoose.connect(process.env.MONGO_URI)
     .catch(err => console.log(err));
 
 app.get("/product", (req, res) => {
+    console.log(JSON.stringify({
+        service: "Product Service",
+        event: "Fetch Product",
+        status: "SUCCESS",
+        timestamp: new Date()
+    }));
     res.send("Product Service Running");
 });
 

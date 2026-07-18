@@ -30,7 +30,12 @@ app.get(
     "/profile",
     authMiddleware,
     (req, res) => {
-
+        console.log(JSON.stringify({
+            service: "Profile Service",
+            event: "Fetch User",
+            status: "SUCCESS",
+            timestamp: new Date()
+        }));
         res.json({
             message: "Welcome",
             user: req.user
