@@ -894,6 +894,87 @@ Verify:
 node -v
 npm -v
 
+you've moved past the npm issue. Now the pipeline is failing at the next dependency:
+
+docker: not found
+
+This means the Jenkins container does not have the Docker CLI installed (or it isn't on the PATH).
+
+Step 1: Check if Docker CLI is installed
+
+Inside the Jenkins container (as root), run:
+
+docker --version
+
+If you get:
+
+bash: docker: command not found
+
+then Docker CLI is not installed.
+
+Step 2: Install the Docker CLI
+
+If you're using a Debian/Ubuntu-based Jenkins image, run:
+
+apt-get update
+apt-get install -y docker.io
+
+Verify:
+
+docker --version
+Step 3: Mount the Docker socket (Very Important)
+
+Even if the Docker CLI is installed, docker build still won't work unless the Jenkins container can talk to the Docker daemon on the host.
+
+When you start the Jenkins container, it should include:
+
+-v /var/run/docker.sock:/var/run/docker.sock
+
+or in Docker Compose:
+
+volumes:
+  - /var/run/docker.sock:/var/run/docker.sock
+
+Without that mount, you'll typically see errors like:
+
+Cannot connect to the Docker daemon at unix:///var/run/docker.sock
+Step 4: How did you start Jenkins?
+
+Please tell me which command you used.
+
+For example, did you run something like:
+
+docker run -d \
+  --name jenkins \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  jenkins/jenkins:lts
+
+or are you using a docker-compose.yml?
+
+My recommendation
+
+Since you're building a complete CI/CD project, repeatedly installing tools into a running container is fragile. A custom Jenkins image with:
+
+Node.js
+npm
+Docker CLI
+Helm
+kubectl
+
+preinstalled is much cleaner and reproducible.
+
+Once you show me your docker run command or docker-compose.yml, I can help you update it so your Jenkins pipeline can successfully execute:
+
+sh 'npm install'
+sh 'docker build ...'
+sh 'docker push ...'
+sh 'helm upgrade ...'
+sh 'kubectl get pods'
+
+without needing to manually patch the container each time.
+
 # Step 19.b – Create a Custom Jenkins Docker Image
 
 
