@@ -12,40 +12,47 @@ spec:
       app: user
 
   template:
-
     metadata:
       labels:
         app: user
 
     spec:
-
       containers:
+        - name: user
+          image: {{ .Values.user.image }}
+          imagePullPolicy: Always
 
-      - name: user
+          ports:
+            - containerPort: {{ .Values.user.port }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.user.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
 
-        image: {{ .Values.user.image }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.user.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
 
-        imagePullPolicy: IfNotPresent
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: microservice-secret
+                  key: MONGO_URI
 
-        env:
-        - name: MONGO_URI
-          valueFrom:
-            secretKeyRef:
-              name: mongodb-secret
-              key: MONGO_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: microservice-secret
+                  key: JWT_SECRET
 
-        ports:
-        - containerPort: {{ .Values.user.port }}
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: {{ .Values.user.port }}
-          initialDelaySeconds: 10
-          periodSeconds: 5
-
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: {{ .Values.user.port }}
-          initialDelaySeconds: 20
-          periodSeconds: 10
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: microservice-config
+                  key: NODE_ENV

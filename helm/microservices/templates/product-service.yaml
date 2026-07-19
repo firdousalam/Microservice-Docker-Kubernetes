@@ -9,8 +9,7 @@ spec:
     app: product
 
   ports:
-    - protocol: TCP
-      port: {{ .Values.product.port }}
+    - port: {{ .Values.product.port }}
       targetPort: {{ .Values.product.port }}
 
   type: ClusterIP

@@ -1,23 +1,33 @@
-const express = require("express");
 require("dotenv").config();
+
+const express = require("express");
+const mongoose = require("mongoose");
+
 const app = express();
 
-const mongoose = require("mongoose");
-console.log("COON", process.env.MONGO_URI)
+app.use(express.json());
+
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("Connected to MongoDB Atlas"))
-    .catch((err) => console.error("MongoDB connection failed:", err));
+    .catch(err => console.log(err));
 
 app.get("/product", (req, res) => {
-    res.send("Product Service");
+    console.log(JSON.stringify({
+        service: "Product Service",
+        event: "Fetch Product",
+        status: "SUCCESS",
+        timestamp: new Date()
+    }));
+    res.send("Product Service Running");
 });
+
 app.get("/health", (req, res) => {
     res.status(200).json({
-        status: "UP",
-        service: "Product Service"
+        service: "Product Service",
+        status: "UP"
     });
 });
 
 app.listen(3002, () => {
-    console.log("Product running");
+    console.log("Product Service Started on Port 3002");
 });

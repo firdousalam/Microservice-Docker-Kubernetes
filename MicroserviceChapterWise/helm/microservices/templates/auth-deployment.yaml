@@ -5,7 +5,7 @@ metadata:
   name: auth-deployment
 
 spec:
-  replicas: {{ .Values.auth.replicaCount }}
+  replicas: {{ .Values.auth.replicas }}
 
   selector:
     matchLabels:

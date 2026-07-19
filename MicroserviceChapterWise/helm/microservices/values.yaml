@@ -163,13 +163,9 @@ affinity: {}
 auth:
 
   replicaCount: 2
-  
-
-  image:
-    repository: firdousalam2058/auth-service
-    tag: v1
-    pullPolicy: Always
-
+  replicas: 2
+  image: firdousalam2058/auth-service:v1
+  port: 3000
   service:
     type: ClusterIP
     port: 3000
@@ -177,15 +173,12 @@ auth:
 user:
 
   replicaCount: 2
-
-  image:
-    repository: firdousalam2058/user-service
-    tag: v1
+  replicas: 2
+  image: firdousalam2058/user-service:v1
+  port: 3001
 
 product:
-
   replicaCount: 2
-
-  image:
-    repository: firdousalam2058/product-service
-    tag: v1
+  replicas: 2
+  image: firdousalam2058/product-service:v1
+  port: 3002

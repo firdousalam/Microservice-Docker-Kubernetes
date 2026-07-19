@@ -12,40 +12,47 @@ spec:
       app: product
 
   template:
-
     metadata:
       labels:
         app: product
 
     spec:
-
       containers:
+        - name: product
+          image: firdousalam2058/product-service:v7
+          imagePullPolicy: Always
 
-      - name: product
+          ports:
+            - containerPort: 3002
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 10
+            periodSeconds: 5
 
-        image: firdousalam2058/product-service:v1
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 20
+            periodSeconds: 10
 
-        env:
-        - name: MONGO_URI
-          valueFrom:
-            secretKeyRef:
-              name: mongodb-secret
-              key: MONGO_URI
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: microservice-secret
+                  key: MONGO_URI
 
-        imagePullPolicy: IfNotPresent
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: microservice-secret
+                  key: JWT_SECRET
 
-        ports:
-        - containerPort: 3002
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 3002
-          initialDelaySeconds: 10
-          periodSeconds: 5
-
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3002
-          initialDelaySeconds: 20
-          periodSeconds: 10
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: microservice-config
+                  key: NODE_ENV

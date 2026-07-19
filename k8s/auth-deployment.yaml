@@ -18,27 +18,48 @@ spec:
 
     spec:
       containers:
-      - name: auth
-        image: firdousalam2058/auth-service:v2
-        env:
-        - name: MONGO_URI
-          valueFrom:
-            secretKeyRef:
-              name: mongodb-secret
-              key: MONGO_URI
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 3000
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 10
-          periodSeconds: 5
+        - name: auth
+          image: firdousalam2058/auth-service:v7
+          imagePullPolicy: Always
 
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 20
-          periodSeconds: 10
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: microservice-secret
+                  key: MONGO_URI
+
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: microservice-secret
+                  key: JWT_SECRET
+
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: microservice-config
+                  key: NODE_ENV

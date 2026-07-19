@@ -562,6 +562,7 @@ docker run -d \
 jenkins/jenkins:lts
 ```
 
+docker run -d --name jenkins -p 8080:8080 -p 50000:50000 -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts
 Open:
 
 ```text
@@ -570,12 +571,69 @@ http://localhost:8080
 
 ---
 
+
+On Windows, the Jenkins initial admin password depends on how Jenkins was installed.
+
+Method 1: If Jenkins was installed using the Windows Installer (.msi) (most common)
+
+Open File Explorer and navigate to:
+
+C:\ProgramData\Jenkins\.jenkins\secrets\initialAdminPassword
+
+or sometimes:
+
+C:\ProgramData\Jenkins\secrets\initialAdminPassword
+
+Open the initialAdminPassword file with Notepad. The contents of the file are the password you'll use to unlock Jenkins.
+
+Method 2: Using Command Prompt
+
+Run:
+
+type "C:\ProgramData\Jenkins\.jenkins\secrets\initialAdminPassword"
+
+If that doesn't exist, try:
+
+type "C:\ProgramData\Jenkins\secrets\initialAdminPassword"
+Method 3: If Jenkins is running in Docker
+
+Find your container:
+
+docker ps
+
+Then execute:
+
+docker exec -it <container-name> cat /var/jenkins_home/secrets/initialAdminPassword
+
+Example:
+
+docker exec -it jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+Method 4: If you installed Jenkins manually using a WAR file
+
+The password is usually located in:
+
+C:\Users\<YourUsername>\.jenkins\secrets\initialAdminPassword
+If the password file doesn't exist
+
+This usually means one of the following:
+
+Jenkins has already been configured.
+The setup wizard has been completed.
+You're looking in the wrong Jenkins home directory.
+
+You can check the Jenkins Home directory by opening:
+
+Manage Jenkins → System Information
+
+or by checking the Jenkins logs.
+
+
 # Step 16 – Install Jenkins Plugins
 
 Install:
 
 * Git
-* Docker Pipeline
+*cd 
 * Docker
 * Pipeline
 * Kubernetes CLI
@@ -601,67 +659,213 @@ If Jenkins can execute both commands, it is ready to deploy.
 
 ---
 
-# Step 18 – Create Jenkins Pipeline
+Step 18 – Create Jenkins Pipeline
+1. Create a New Pipeline Job
+Jenkins Dashboard
+Click New Item
 
-Create a **Pipeline Project** instead of a Freestyle Job.
+Enter a name:
 
-Pipeline stages:
+microservice-pipeline
+Select Pipeline
+Click OK
 
-```text
+You are now on the page shown in your screenshot.
+
+2. General Section
+
+Fill these fields:
+
+Description
+
+CI/CD Pipeline for Node.js Microservices using Docker, Kubernetes, Helm and Jenkins
+
+Leave the other options unchecked for now.
+
+3. Triggers
+
+For now, don't enable anything.
+
+Later you can enable:
+
+✅ GitHub hook trigger for GITScm polling
+
+when you configure GitHub webhooks.
+
+4. Pipeline Section
+
+This is the important part.
+
+Currently yours is:
+
+Definition
+
+Pipeline script
+
+Change it to:
+
+Pipeline script from SCM
+
+You'll now see additional options.
+
+SCM
+
+Select
+
+Git
+Repository URL
+
+Paste your GitHub repository.
+
+Example
+
+https://github.com/firdousalam2058/Microservice-Docker-Kubernetes.git
+Credentials
+
+If your repository is public, leave it empty.
+
+If private, add GitHub credentials.
+
+Branch
+*/main
+
+or
+
+*/master
+
+depending on your repository.
+
+Script Path
+Jenkinsfile
+
+This tells Jenkins to read the Jenkinsfile from the project root.
+
+Click Save.
+
+Step 19 – Create Jenkinsfile
+
+In your project root (same folder as helm, auth-service, user-service, etc.) create a file named:
+
+Jenkinsfile
+
+Example project structure:
+
+Microservice-Docker-Kubernetes/
+│
+├── auth-service/
+├── user-service/
+├── product-service/
+├── helm/
+├── kubernetes/
+├── Jenkinsfile
+└── README.md
+Basic Jenkinsfile
+
+Start with this simple pipeline to verify Jenkins can execute the stages.
+
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Checking out source code...'
+                checkout scm
+            }
+        }
+
+        stage('Install') {
+            steps {
+                echo 'Installing dependencies...'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+            }
+        }
+
+        stage('Build Docker') {
+            steps {
+                echo 'Building Docker images...'
+            }
+        }
+
+        stage('Push Docker') {
+            steps {
+                echo 'Pushing Docker images...'
+            }
+        }
+
+        stage('Deploy Using Helm') {
+            steps {
+                echo 'Deploying using Helm...'
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                echo 'Verifying deployment...'
+            }
+        }
+    }
+}
+How the Pipeline Works
+
+When you click Build Now, Jenkins executes the stages in order:
+
 Checkout
+      │
+      ▼
+Install
+      │
+      ▼
+Test
+      │
+      ▼
+Build Docker
+      │
+      ▼
+Push Docker
+      │
+      ▼
+Deploy Using Helm
+      │
+      ▼
+Verify
 
-↓
+If any stage fails (for example, Docker build), Jenkins stops and the remaining stages are skipped. This ensures that later stages only run after earlier ones complete successfully.
 
-Install Dependencies
+Later, replace the placeholder commands
 
-↓
+Once the pipeline structure is working, you can replace the echo statements with real commands, for example:
 
-Run Tests
+Install
 
-↓
+npm install
 
-Build Docker Images
+Test
 
-↓
+npm test
 
-Push Docker Images
+Build Docker
 
-↓
+docker build -t firdousalam2058/auth-service:v1 ./auth-service
 
-Helm Upgrade
+Push Docker
 
-↓
+docker push firdousalam2058/auth-service:v1
 
-Verify Deployment
-```
+Deploy Using Helm
 
----
+helm upgrade --install microservice-app ./helm/microservices
 
-# Step 19 – Jenkinsfile
+Verify
 
-Create a **Jenkinsfile** in the project root.
-
-Pipeline stages:
-
-```groovy
-stage('Checkout')
-
-stage('Install')
-
-stage('Test')
-
-stage('Build Docker')
-
-stage('Push Docker')
-
-stage('Deploy Using Helm')
-
-stage('Verify')
-```
-
-Each stage should execute only after the previous stage completes successfully.
-
----
+kubectl get pods
+kubectl get services
 
 # Step 20 – Deploy Using Helm
 
@@ -936,3 +1140,5 @@ You have now completed an end-to-end production-grade Node.js Microservices proj
 * Production Deployment Best Practices
 
 You now have the knowledge and hands-on experience to build, package, automate, deploy, monitor, and maintain production-ready cloud-native microservices using modern DevOps practices.
+
+

@@ -9,8 +9,7 @@ spec:
     app: auth
 
   ports:
-    - protocol: TCP
-      port: {{ .Values.auth.port }}
+    - port: {{ .Values.auth.port }}
       targetPort: {{ .Values.auth.port }}
 
   type: ClusterIP
