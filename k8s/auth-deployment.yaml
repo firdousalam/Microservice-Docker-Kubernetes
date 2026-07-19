@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: auth
-          image: firdousalam2058/auth-service:v7
+          image: ghcr.io/firdousalam2058/auth-service:v1
           imagePullPolicy: Always
 
           ports:

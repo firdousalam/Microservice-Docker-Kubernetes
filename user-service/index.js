@@ -13,7 +13,7 @@ mongoose.connect(process.env.MONGO_URI)
     .catch(err => console.log(err));
 
 app.get("/user", (req, res) => {
-    res.send("User Service Running");
+    res.send("User Service Running Using Github");
 });
 
 app.get("/health", (req, res) => {

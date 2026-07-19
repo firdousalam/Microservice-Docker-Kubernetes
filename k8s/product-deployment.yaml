@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: product
-          image: firdousalam2058/product-service:v7
+          image: ghcr.io/firdousalam2058/product-service:v1
           imagePullPolicy: Always
 
           ports:

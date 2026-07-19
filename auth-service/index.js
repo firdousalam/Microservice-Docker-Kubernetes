@@ -12,12 +12,12 @@ mongoose.connect(process.env.MONGO_URI)
     .catch(err => console.log(err));
 
 app.get("/auth", (req, res) => {
-    res.send("Auth Service Running");
+    res.send("Auth Service Running Github");
 });
 
 app.get("/health", (req, res) => {
     res.status(200).json({
-        service: "Auth Service",
+        service: "Auth Service Github",
         status: "UP"
     });
 });

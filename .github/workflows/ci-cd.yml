@@ -1,0 +1,39 @@
+name: Microservice CI/CD
+
+
+on:
+  push:
+    branches:
+      - gitHub
+
+
+jobs:
+
+ build:
+
+  runs-on: ubuntu-latest
+
+
+  steps:
+
+  - name: Checkout Code
+    uses: actions/checkout@v4
+
+
+  - name: Node Setup
+    uses: actions/setup-node@v4
+    with:
+      node-version: 22
+
+
+  - name: Install Dependencies
+    run: |
+      cd auth-service
+      npm install
+
+
+  - name: Docker Build
+    run: |
+      docker build \
+      -t auth-service:v1 \
+      ./auth-service

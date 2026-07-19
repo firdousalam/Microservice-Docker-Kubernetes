@@ -1,0 +1,338 @@
+Chapter 15 – GitHub Actions CI/CD Pipeline
+Objective
+
+Replace manual Docker build and Jenkins pipeline with GitHub native CI/CD.
+
+Architecture:
+
+Developer
+    |
+    |
+ Git Push
+    |
+    |
+ GitHub Repository
+    |
+    |
+ GitHub Actions
+    |
+    |
+ Docker Build
+    |
+    |
+ Docker Hub / GHCR
+    |
+    |
+ Kubernetes Deployment
+
+15.1 Create Workflow Folder
+
+Inside project:
+
+.github
+   |
+   └── workflows
+          |
+          └── ci-cd.yml
+15.2 Build Pipeline
+
+Example:
+
+name: Microservice CI/CD
+
+
+on:
+  push:
+    branches:
+      - main
+
+
+jobs:
+
+ build:
+
+  runs-on: ubuntu-latest
+
+
+  steps:
+
+  - name: Checkout Code
+    uses: actions/checkout@v4
+
+
+  - name: Node Setup
+    uses: actions/setup-node@v4
+    with:
+      node-version: 22
+
+
+  - name: Install Dependencies
+    run: |
+      cd auth-service
+      npm install
+
+
+  - name: Docker Build
+    run: |
+      docker build \
+      -t auth-service:v1 \
+      ./auth-service
+
+15.3 GitHub Secrets
+
+Configure:
+
+Repository
+ |
+ Settings
+ |
+ Secrets and Variables
+ |
+ Actions
+
+Add:
+
+DOCKER_USERNAME
+
+DOCKER_PASSWORD
+Chapter 16 – GitHub Container Registry (GHCR)
+Objective
+
+Store Docker images directly inside GitHub.
+
+Current:
+
+GitHub
+   |
+   |
+Docker Hub
+   |
+   |
+Kubernetes
+
+New:
+
+GitHub
+   |
+   |
+GitHub Actions
+   |
+   |
+GitHub Container Registry
+   |
+   |
+Kubernetes
+16.1 Enable Packages
+
+Your image:
+
+ghcr.io/firdousalam/auth-service:v1
+
+ghcr.io/firdousalam/user-service:v1
+
+ghcr.io/firdousalam/product-service:v1
+16.2 Update Kubernetes Deployment
+
+Before:
+
+image:
+ firdousalam2058/auth-service:v1
+
+After:
+
+image:
+ ghcr.io/firdousalam/auth-service:v1
+Chapter 17 – Deploy Kubernetes on Cloud
+Objective
+
+Move from:
+
+Docker Desktop Kubernetes
+(Local)
+
+to:
+
+Cloud Kubernetes
+(Production)
+Option A: AWS EKS
+
+Architecture:
+
+GitHub
+   |
+GitHub Actions
+   |
+Docker Image
+   |
+Amazon ECR
+   |
+AWS EKS Cluster
+   |
+ Kubernetes Pods
+
+Components:
+
+EKS Cluster
+Node Groups
+Load Balancer
+IAM Roles
+VPC Networking
+
+Commands:
+
+Create cluster:
+
+eksctl create cluster \
+--name microservice-cluster \
+--region ap-south-1
+
+Deploy:
+
+helm install microservices ./helm/microservices
+Option B: Azure AKS
+
+Architecture:
+
+GitHub
+ |
+Azure DevOps/GitHub Actions
+ |
+Azure Container Registry
+ |
+AKS
+ |
+Microservices
+Chapter 18 – Kubernetes Monitoring using Prometheus & Grafana
+Objective
+
+Monitor:
+
+CPU
+Memory
+Pod health
+API performance
+
+Architecture:
+
+Kubernetes Cluster
+
+        |
+        |
+ Prometheus
+        |
+        |
+ Grafana Dashboard
+
+
+Install:
+
+helm repo add prometheus-community \
+https://prometheus-community.github.io/helm-charts
+
+Install:
+
+helm install monitoring \
+prometheus-community/kube-prometheus-stack
+
+Access Grafana:
+
+http://localhost:3000
+
+Dashboards:
+
+Kubernetes Cluster Overview
+Node Metrics
+Pod Metrics
+API Latency
+Chapter 19 – Centralized Logging using ELK Stack
+Objective
+
+Collect application logs centrally.
+
+Architecture:
+
+Microservices
+
+Auth Pod
+User Pod
+Product Pod
+
+      |
+      |
+ Filebeat
+
+      |
+      |
+ Elasticsearch
+
+      |
+      |
+ Kibana Dashboard
+
+
+Components:
+
+Elasticsearch
+
+Stores logs
+
+Logstash
+
+Processes logs
+
+Kibana
+
+Visualizes logs
+
+Example log:
+
+{
+ service:"auth-service",
+ level:"ERROR",
+ message:"JWT token expired",
+ timestamp:"2026-07-20"
+}
+
+Search in Kibana:
+
+service:auth-service
+level:ERROR
+Final Production Architecture After Chapter 19
+                    Developer
+                       |
+                       |
+                    GitHub
+                       |
+                       |
+              GitHub Actions CI/CD
+                       |
+          ---------------------------
+          |                         |
+       Docker Build              Helm
+          |                         |
+          |                         |
+    GitHub Container Registry       |
+          |                         |
+          ---------------------------
+                       |
+                       |
+                Kubernetes Cluster
+                  (AWS EKS/AKS)
+
+        --------------------------------
+        |              |               |
+   Auth Service   User Service   Product Service
+
+
+        |
+        |
+ Monitoring
+        |
+ Prometheus + Grafana
+
+
+        |
+        |
+ Logging
+        |
+ ELK Stack

@@ -18,12 +18,12 @@ app.get("/product", (req, res) => {
         status: "SUCCESS",
         timestamp: new Date()
     }));
-    res.send("Product Service Running");
+    res.send("Product Service Running Github");
 });
 
 app.get("/health", (req, res) => {
     res.status(200).json({
-        service: "Product Service",
+        service: "Product Service Github",
         status: "UP"
     });
 });
