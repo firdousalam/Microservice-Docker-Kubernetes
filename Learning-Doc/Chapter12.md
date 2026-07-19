@@ -867,6 +867,182 @@ Verify
 kubectl get pods
 kubectl get services
 
+
+# Step 19.b – Create a Custom Jenkins Docker Image
+
+Instead of using the default Jenkins image, we'll build one that already contains:
+
+✅ Git
+✅ Node.js & npm
+✅ Docker CLI
+✅ kubectl
+✅ Helm
+Project Structure
+
+Create a new folder.
+
+jenkins/
+│
+├── Dockerfile
+└── docker-compose.yml
+Dockerfile
+
+Create a file named Dockerfile.
+
+FROM jenkins/jenkins:lts
+
+USER root
+
+# Install required packages
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    unzip \
+    git \
+    ca-certificates \
+    gnupg \
+    lsb-release
+
+#################################################
+# Install NodeJS 22 + npm
+#################################################
+
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+
+RUN apt-get install -y nodejs
+
+#################################################
+# Install Docker CLI
+#################################################
+
+RUN apt-get install -y docker.io
+
+#################################################
+# Install kubectl
+#################################################
+
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+RUN install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+#################################################
+# Install Helm
+#################################################
+
+RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+#################################################
+
+USER jenkins
+docker-compose.yml
+version: "3.9"
+
+services:
+
+  jenkins:
+
+    build: .
+
+    container_name: jenkins
+
+    restart: always
+
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+
+  jenkins_home:
+Build Image
+docker compose build
+Start Jenkins
+docker compose up -d
+Verify Tools
+
+Enter the container.
+
+docker exec -it jenkins bash
+
+Run:
+
+node -v
+npm -v
+docker --version
+kubectl version --client
+helm version
+
+Expected output:
+
+Node v22.x
+
+npm 10.x
+
+Docker 29.x
+
+kubectl 1.36.x
+
+Helm v3.x
+Update Jenkinsfile
+
+Now your pipeline can actually execute commands.
+
+Example:
+
+pipeline {
+
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install') {
+            steps {
+                dir('auth-service') {
+                    sh 'npm install'
+                }
+
+                dir('user-service') {
+                    sh 'npm install'
+                }
+
+                dir('product-service') {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Build Docker') {
+            steps {
+
+                sh 'docker build -t firdousalam2058/auth-service:v1 ./auth-service'
+
+                sh 'docker build -t firdousalam2058/user-service:v1 ./user-service'
+
+                sh 'docker build -t firdousalam2058/product-service:v1 ./product-service'
+
+            }
+        }
+    }
+}
+One More Thing: Docker Socket
+
+Since Jenkins is running in a container and needs to build Docker images, the Docker socket must be mounted:
+
+volumes:
+  - /var/run/docker.sock:/var/run/docker.sock
+
+Without this mount, docker build inside Jenkins won't be able to communicate with the Docker daemon.
+
 # Step 20 – Deploy Using Helm
 
 Instead of running multiple `kubectl apply` commands, deploy using Helm.
