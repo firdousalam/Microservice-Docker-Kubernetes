@@ -12,13 +12,33 @@ pipeline {
 
         stage('Install') {
             steps {
-                sh 'npm install'
+                dir('auth-service') {
+                    sh 'npm install'
+                }
+
+                dir('user-service') {
+                    sh 'npm install'
+                }
+
+                dir('product-service') {
+                    sh 'npm install'
+                }
             }
         }
 
         stage('Test') {
             steps {
-                sh 'npm test'
+                dir('auth-service') {
+                    sh 'npm test'
+                }
+
+                dir('user-service') {
+                    sh 'npm test'
+                }
+
+                dir('product-service') {
+                    sh 'npm test'
+                }
             }
         }
 
