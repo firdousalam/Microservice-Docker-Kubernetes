@@ -27,11 +27,6 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            echo 'Test'
-           
-        }
-
         stage('Build Docker') {
             steps {
                 sh 'docker build -t firdousalam2058/auth-service:v1 ./auth-service'
