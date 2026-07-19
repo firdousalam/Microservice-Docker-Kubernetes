@@ -1,6 +1,6 @@
-# Chapter 12 – Packaging the Application with Helm & Automating Deployments Using GitHub Actions CI/CD
+# Chapter 12 – Packaging the Application with Helm & Automating Deployments Using Jenkins & GitHub Actions CI/CD
 
-> **Building Production-Ready Node.js Microservices using Docker, Kubernetes, Helm & CI/CD**
+# Building Production-Ready Node.js Microservices using Docker, Kubernetes, Helm & CI/CD
 
 ---
 
@@ -8,29 +8,31 @@
 
 Congratulations! 🎉
 
-By this stage, you have successfully built a complete production-style microservices application.
+By this stage, you have successfully built a complete production-ready Node.js Microservices application.
 
 Your project now includes:
 
-- ✅ Three Node.js Microservices
-- ✅ Docker
-- ✅ Docker Hub
-- ✅ Kubernetes Deployments
-- ✅ Kubernetes Services
-- ✅ NGINX Ingress
-- ✅ MongoDB Atlas
-- ✅ Kubernetes Secrets & ConfigMaps
-- ✅ JWT Authentication
-- ✅ Health Checks
-- ✅ Horizontal Pod Autoscaler (HPA)
-- ✅ Rolling Updates
-- ✅ Prometheus & Grafana Monitoring
+* ✅ Three Node.js Microservices
+* ✅ Docker
+* ✅ Docker Hub
+* ✅ Kubernetes Deployments
+* ✅ Kubernetes Services
+* ✅ NGINX Ingress
+* ✅ MongoDB Atlas
+* ✅ Kubernetes Secrets & ConfigMaps
+* ✅ JWT Authentication
+* ✅ Health Checks
+* ✅ Horizontal Pod Autoscaler (HPA)
+* ✅ Rolling Updates
+* ✅ Prometheus & Grafana Monitoring
 
-Your application is now **production-ready**.
+At this point, your application is production-ready.
 
-However, imagine managing **20 or 50 microservices**.
+However, imagine maintaining **20, 50, or even 100 microservices**.
 
-Deploying every service manually would require running commands like:
+Managing individual Kubernetes YAML files quickly becomes difficult.
+
+Instead of running:
 
 ```bash
 kubectl apply -f auth-deployment.yaml
@@ -47,68 +49,81 @@ kubectl apply -f configmap.yaml
 kubectl apply -f secret.yaml
 ```
 
-This quickly becomes difficult to maintain.
+Production teams use:
 
-Production teams solve this by using:
+* **Helm** to package Kubernetes resources.
+* **Jenkins** for Local Continuous Integration and Continuous Deployment.
+* **GitHub Actions** for Cloud-based CI/CD.
 
-- **Helm** for packaging Kubernetes resources
-- **GitHub Actions** for automating builds and deployments
+By the end of this chapter, you will be able to:
 
-By the end of this chapter, you'll have:
-
-- A single command to deploy your application.
-- A complete CI/CD pipeline that automatically builds Docker images, pushes them to Docker Hub, and deploys changes whenever code is pushed to GitHub.
-
----
-
-# Why Helm?
-
-Helm is the **package manager for Kubernetes**.
-
-Instead of maintaining dozens of YAML files, Helm bundles everything into a reusable **Chart**.
-
-## Benefits
-
-- Reusable deployments
-- Environment-specific configurations
-- Easy upgrades
-- Easy rollbacks
-- Parameterized values
-- Version-controlled deployments
+* Package the complete application using Helm.
+* Deploy the entire application using a single command.
+* Automatically build Docker images after every code change.
+* Automatically push images to Docker Hub.
+* Automatically deploy updates to Kubernetes using Jenkins.
+* Deploy the same application from GitHub Actions.
 
 ---
 
-# Project Structure
+# Final Project Structure
 
 ```text
 Microservice-Docker-Kubernetes/
-│
+
 ├── auth-service/
 ├── user-service/
 ├── product-service/
-│
+
 ├── k8s/
-│
+
 ├── helm/
 │   └── microservices/
 │       ├── Chart.yaml
 │       ├── values.yaml
+│       ├── values-dev.yaml
+│       ├── values-prod.yaml
 │       ├── .helmignore
+│       ├── charts/
 │       └── templates/
-│           ├── auth-deployment.yaml
-│           ├── auth-service.yaml
-│           ├── user-deployment.yaml
-│           ├── user-service.yaml
-│           ├── product-deployment.yaml
-│           ├── product-service.yaml
-│           ├── ingress.yaml
-│           ├── secret.yaml
-│           └── configmap.yaml
-│
+│            ├── auth-deployment.yaml
+│            ├── auth-service.yaml
+│            ├── user-deployment.yaml
+│            ├── user-service.yaml
+│            ├── product-deployment.yaml
+│            ├── product-service.yaml
+│            ├── ingress.yaml
+│            ├── secret.yaml
+│            ├── configmap.yaml
+│            └── _helpers.tpl
+
+├── Jenkinsfile
+
 └── .github/
     └── workflows/
-        └── deploy.yml
+         └── deploy.yml
 ```
+
+---
+
+# Part 1 – Packaging Kubernetes Resources Using Helm
+
+## Why Helm?
+
+Helm is the package manager for Kubernetes.
+
+Instead of maintaining dozens of Kubernetes YAML files, Helm packages everything into a reusable **Chart**.
+
+## Benefits
+
+* Reusable deployments
+* Environment-specific configurations
+* Easy upgrades
+* Easy rollbacks
+* Parameterized values
+* Version-controlled deployments
+* One-command installation
+* Simplified maintenance
 
 ---
 
@@ -120,19 +135,19 @@ Verify Helm installation:
 helm version
 ```
 
-Example:
+Example output:
 
 ```text
 version.BuildInfo{
-Version:"v4.2.3"
+Version:"v4.x.x"
 }
 ```
 
-If Helm isn't installed:
+If Helm is not installed:
 
 ### Windows
 
-```bash
+```powershell
 winget install Helm.Helm
 ```
 
@@ -146,8 +161,6 @@ helm version
 
 # Step 2 – Create a Helm Chart
 
-Create a new Helm chart:
-
 ```bash
 mkdir helm
 
@@ -156,7 +169,7 @@ cd helm
 helm create microservices
 ```
 
-Helm generates:
+Generated structure:
 
 ```text
 microservices/
@@ -167,90 +180,111 @@ microservices/
 
 ---
 
-# Step 3 – Remove Default Templates
+# Step 3 – Understanding Chart.yaml
 
-Helm generates several default templates that aren't required for this project.
+Every Helm chart contains a **Chart.yaml** file.
 
-Generated files:
-
-```text
-templates/
-├── NOTES.txt
-├── serviceaccount.yaml
-├── hpa.yaml
-├── ingress.yaml
-├── _helpers.tpl
-└── tests/
-```
-
-Delete the unnecessary files:
-
-- NOTES.txt
-- serviceaccount.yaml
-- hpa.yaml
-- _helpers.tpl
-- tests/
-
-This avoids errors such as:
-
-```text
-INSTALLATION FAILED
-
-microservices/templates/tests/test-connection.yaml
-
-nil pointer evaluating interface {}.port
-```
-
-## Real Issue We Encountered
-
-The generated `test-connection.yaml` referenced:
+Example:
 
 ```yaml
-.Values.service.port
+apiVersion: v2
+name: microservices
+description: Production Node.js Microservices
+type: application
+version: 0.1.0
+appVersion: "1.0"
 ```
 
-But our `values.yaml` defined separate sections:
+## Explanation
 
-- auth
-- user
-- product
-
-Removing the unused `templates/tests/` directory resolved the issue.
+| Property    | Description            |
+| ----------- | ---------------------- |
+| apiVersion  | Helm Chart API Version |
+| name        | Chart Name             |
+| description | Project Description    |
+| type        | Application or Library |
+| version     | Chart Version          |
+| appVersion  | Application Version    |
 
 ---
 
-# Step 4 – Create values.yaml
+# Step 4 – Configure values.yaml
 
-Store configurable values inside `values.yaml` instead of hardcoding them.
+Instead of hardcoding image names and replica counts inside YAML files, move everything into **values.yaml**.
 
 Example:
 
 ```yaml
 auth:
-  image: firdousalam2058/auth-service:v7
-  replicas: 1
-  port: 3000
+
+  replicaCount: 2
+
+  image:
+    repository: firdousalam2058/auth-service
+    tag: v1
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 3000
 
 user:
-  image: firdousalam2058/user-service:v7
-  replicas: 1
-  port: 3001
+
+  replicaCount: 2
+
+  image:
+    repository: firdousalam2058/user-service
+    tag: v1
 
 product:
-  image: firdousalam2058/product-service:v7
-  replicas: 1
-  port: 3002
+
+  replicaCount: 2
+
+  image:
+    repository: firdousalam2058/product-service
+    tag: v1
 ```
 
-These values can later be overridden for Development, Staging, and Production environments.
+## Benefits
+
+* No hardcoded values
+* Environment-specific configuration
+* Easier upgrades
+* Better maintenance
 
 ---
 
-# Step 5 – Convert Kubernetes YAML Files into Helm Templates
+# Step 5 – Create Environment-specific Values Files
 
-Copy your existing Kubernetes manifests into the Helm `templates/` directory.
+Development
 
-Example:
+```text
+values-dev.yaml
+```
+
+Production
+
+```text
+values-prod.yaml
+```
+
+Deploy Development:
+
+```bash
+helm install microservice-app ./helm/microservices -f values-dev.yaml
+```
+
+Deploy Production:
+
+```bash
+helm upgrade microservice-app ./helm/microservices -f values-prod.yaml
+```
+
+---
+
+# Step 6 – Convert Kubernetes YAML Files into Helm Templates
+
+Copy existing Kubernetes manifests.
 
 ```text
 k8s/
@@ -264,76 +298,117 @@ helm/microservices/templates/
 
 Repeat for:
 
-- auth-service.yaml
-- user-deployment.yaml
-- user-service.yaml
-- product-deployment.yaml
-- product-service.yaml
-- ingress.yaml
-- secret.yaml
-- configmap.yaml
+* auth-service
+* user-deployment
+* user-service
+* product-deployment
+* product-service
+* ingress
+* secret
+* configmap
 
 ---
 
-# Step 6 – Replace Hardcoded Values
+# Step 7 – Replace Hardcoded Values
 
-Replace only configurable values with Helm expressions.
-
-### Before
+Before:
 
 ```yaml
-spec:
-  replicas: 1
+replicas: 1
 
-containers:
-- name: auth
-  image: firdousalam2058/auth-service:v7
+image: firdousalam2058/auth-service:v7
 ```
 
-### After
+After:
 
 ```yaml
-spec:
-  replicas: {{ .Values.auth.replicas }}
+replicas: {{ .Values.auth.replicaCount }}
 
-containers:
-- name: auth
-  image: {{ .Values.auth.image }}
+image: "{{ .Values.auth.image.repository }}:{{ .Values.auth.image.tag }}"
 ```
-
-Update the Service:
-
-```yaml
-ports:
-- port: {{ .Values.auth.port }}
-  targetPort: {{ .Values.auth.port }}
-```
-
-Repeat for the User and Product services.
 
 ---
 
-# Step 7 – Validate the Helm Chart
+# Step 8 – Helm Variables
 
-Validate your chart:
+Frequently used Helm objects:
+
+```text
+.Values
+
+.Chart
+
+.Release
+
+.Capabilities
+```
+
+Examples:
+
+```yaml
+{{ .Release.Name }}
+
+{{ .Chart.Name }}
+
+{{ .Release.Namespace }}
+
+{{ .Values.auth.image.tag }}
+```
+
+---
+
+# Step 9 – Helper Templates
+
+Create:
+
+```text
+templates/_helpers.tpl
+```
+
+Example:
+
+```yaml
+{{- define "microservice.labels" }}
+
+app.kubernetes.io/name: {{ .Chart.Name }}
+app.kubernetes.io/version: {{ .Chart.Version }}
+
+{{- end }}
+```
+
+Use:
+
+```yaml
+labels:
+
+{{ include "microservice.labels" . | indent 4 }}
+```
+
+Benefits:
+
+* Avoid duplicated YAML
+* Standard labels
+* Easier maintenance
+
+---
+
+# Step 10 – Validate the Helm Chart
+
+Lint the chart:
 
 ```bash
 helm lint ./helm/microservices
 ```
 
-Render templates locally:
+Render templates:
 
 ```bash
 helm template microservice-app ./helm/microservices
 ```
 
-Review the generated manifests to ensure values are rendered correctly.
-
 ---
 
-# Step 8 – Install the Helm Chart
-
-Install the application:
+# Step 11 – Install the Helm Chart
 
 ```bash
 helm install microservice-app ./helm/microservices
@@ -345,24 +420,16 @@ Verify:
 helm list
 ```
 
-Expected:
-
-```text
-NAME
-microservice-app
-```
-
 ---
 
-# Step 9 – Upgrade the Release
+# Step 12 – Upgrade the Release
 
 Whenever you update:
 
-- Images
-- Replica counts
-- Ports
-- ConfigMaps
-- Secrets
+* Images
+* Replica count
+* ConfigMaps
+* Secrets
 
 Run:
 
@@ -370,306 +437,408 @@ Run:
 helm upgrade microservice-app ./helm/microservices
 ```
 
-Helm updates only the changed resources.
+---
+
+# Step 13 – Rollback
+
+View history:
+
+```bash
+helm history microservice-app
+```
+
+Rollback:
+
+```bash
+helm rollback microservice-app 2
+```
 
 ---
 
-# Step 10 – Uninstall the Application
-
-Remove everything managed by Helm:
+# Step 14 – Uninstall
 
 ```bash
 helm uninstall microservice-app
 ```
 
-This removes:
+---
 
-- Deployments
-- Services
-- Ingress
-- ConfigMaps
-- Secrets
+# Part 2 – Local Jenkins CI/CD Pipeline
+
+## Why Jenkins?
+
+During development, we continuously make changes to our source code.
+
+Without CI/CD:
+
+```text
+Modify Code
+
+↓
+
+docker build
+
+↓
+
+docker push
+
+↓
+
+helm upgrade
+
+↓
+
+kubectl rollout
+```
+
+Repeating these steps manually becomes time-consuming.
+
+Jenkins automates the complete deployment process.
 
 ---
 
-# GitHub Actions CI/CD
-
-CI/CD stands for:
-
-- **Continuous Integration (CI)** – Automatically build and test every code change.
-- **Continuous Deployment (CD)** – Automatically deploy successful builds.
-
-Instead of manually rebuilding Docker images and updating Kubernetes, GitHub Actions performs these tasks automatically.
-
----
-
-# CI/CD Workflow
+# Jenkins CI/CD Workflow
 
 ```text
 Developer
-    │
-git push
-    │
-    ▼
-GitHub Repository
-    │
-    ▼
-GitHub Actions
-    │
-    ├── Checkout Code
-    ├── Install Node.js
-    ├── Install Dependencies
-    ├── Run Tests
-    ├── Build Docker Images
-    ├── Push Images to Docker Hub
-    ├── Update Kubernetes Deployment
-    └── Verify Rollout
-            │
-            ▼
-     Kubernetes Cluster
+
+        │
+
+Git Commit / Push
+
+        │
+
+        ▼
+
+Jenkins Pipeline
+
+        │
+
+Checkout Source
+
+        │
+
+Install Dependencies
+
+        │
+
+Run Tests
+
+        │
+
+Build Docker Images
+
+        │
+
+Push Images to Docker Hub
+
+        │
+
+Helm Upgrade
+
+        │
+
+Verify Rollout
+
+        │
+
+        ▼
+
+Docker Desktop Kubernetes
 ```
 
 ---
 
-# Step 11 – Create the Workflow Directory
+# Step 15 – Install Jenkins
+
+Run Jenkins using Docker:
+
+```bash
+docker run -d \
+--name jenkins \
+-p 8080:8080 \
+-p 50000:50000 \
+-v jenkins_home:/var/jenkins_home \
+jenkins/jenkins:lts
+```
+
+Open:
 
 ```text
-.github/
-└── workflows/
-    └── deploy.yml
+http://localhost:8080
 ```
 
 ---
 
-# Step 12 – Configure GitHub Secrets
+# Step 16 – Install Jenkins Plugins
 
-Store sensitive information securely in GitHub.
+Install:
 
-| Secret | Purpose |
-|---------|----------|
-| DOCKER_USERNAME | Docker Hub username |
-| DOCKER_PASSWORD | Docker Hub password or access token |
-| KUBE_CONFIG | Base64-encoded kubeconfig |
-
-> **Never hardcode credentials inside your workflow.**
+* Git
+* Docker Pipeline
+* Docker
+* Pipeline
+* Kubernetes CLI
+* Blue Ocean (Optional)
 
 ---
 
-# Step 13 – Create deploy.yml
+# Step 17 – Configure Docker & Kubernetes
 
-A typical workflow performs the following:
-
-- Trigger on push to `main`
-- Checkout source code
-- Setup Node.js
-- Install dependencies
-- Run tests
-- Build Docker images
-- Login to Docker Hub
-- Push Docker images
-- Configure kubectl
-- Deploy to Kubernetes
-- Verify rollout
-
-Example:
-
-```yaml
-name: Deploy Microservices
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Docker Images
-        run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/auth-service:latest ./auth-service
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/user-service:latest ./user-service
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/product-service:latest ./product-service
-
-      - name: Push Docker Images
-        run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/user-service:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/product-service:latest
-```
-
-You can extend the workflow by installing `kubectl`, loading the kubeconfig, and executing:
+Verify Docker:
 
 ```bash
-helm upgrade --install microservice-app ./helm/microservices
+docker version
+```
+
+Verify Kubernetes:
+
+```bash
+kubectl get nodes
+```
+
+If Jenkins can execute both commands, it is ready to deploy.
+
+---
+
+# Step 18 – Create Jenkins Pipeline
+
+Create a **Pipeline Project** instead of a Freestyle Job.
+
+Pipeline stages:
+
+```text
+Checkout
+
+↓
+
+Install Dependencies
+
+↓
+
+Run Tests
+
+↓
+
+Build Docker Images
+
+↓
+
+Push Docker Images
+
+↓
+
+Helm Upgrade
+
+↓
+
+Verify Deployment
 ```
 
 ---
 
-# Step 14 – Deploy Using Helm in CI/CD
+# Step 19 – Jenkinsfile
 
-Instead of multiple `kubectl apply` commands, use:
+Create a **Jenkinsfile** in the project root.
 
-```bash
-helm upgrade --install microservice-app ./helm/microservices
+Pipeline stages:
+
+```groovy
+stage('Checkout')
+
+stage('Install')
+
+stage('Test')
+
+stage('Build Docker')
+
+stage('Push Docker')
+
+stage('Deploy Using Helm')
+
+stage('Verify')
 ```
 
-This command:
-
-- Installs the application if it doesn't exist.
-- Upgrades it if it already exists.
+Each stage should execute only after the previous stage completes successfully.
 
 ---
 
-# Step 15 – Verify the Deployment
+# Step 20 – Deploy Using Helm
 
-Check rollout status:
+Instead of running multiple `kubectl apply` commands, deploy using Helm.
 
 ```bash
-kubectl rollout status deployment auth-deployment
+helm upgrade --install microservice-app \
+./helm/microservices \
+--set auth.image.tag=${BUILD_NUMBER} \
+--set user.image.tag=${BUILD_NUMBER} \
+--set product.image.tag=${BUILD_NUMBER}
 ```
 
-View running Pods:
+This automatically deploys the latest Docker images using the Jenkins build number as the image tag.
+
+---
+
+# Step 21 – Verify Deployment
+
+Verify rollout:
+
+```bash
+kubectl rollout status deployment/auth-deployment
+
+kubectl rollout status deployment/user-deployment
+
+kubectl rollout status deployment/product-deployment
+```
+
+Verify Pods:
 
 ```bash
 kubectl get pods
 ```
 
-Verify the deployed image:
-
-```bash
-kubectl describe pod <pod-name>
-```
-
 ---
 
-# Useful Commands
+# Part 3 – GitHub Actions CI/CD
 
-### Verify Helm
+GitHub Actions automates the same deployment process in the cloud.
 
-```bash
-helm version
+Workflow:
+
+```text
+Developer
+
+↓
+
+Git Push
+
+↓
+
+GitHub Actions
+
+↓
+
+Build
+
+↓
+
+Test
+
+↓
+
+Docker Build
+
+↓
+
+Docker Push
+
+↓
+
+Helm Upgrade
+
+↓
+
+Kubernetes Cluster
 ```
 
-### Validate Chart
+Store the following secrets in GitHub:
 
-```bash
-helm lint ./helm/microservices
-```
+* DOCKER_USERNAME
+* DOCKER_PASSWORD
+* KUBE_CONFIG
 
-### Render Templates
-
-```bash
-helm template microservice-app ./helm/microservices
-```
-
-### Install
-
-```bash
-helm install microservice-app ./helm/microservices
-```
-
-### Upgrade
-
-```bash
-helm upgrade microservice-app ./helm/microservices
-```
-
-### Upgrade or Install
+Deploy using:
 
 ```bash
 helm upgrade --install microservice-app ./helm/microservices
 ```
 
-### List Releases
+---
+
+# Local Jenkins vs GitHub Actions
+
+| Feature                   | Jenkins | GitHub Actions |
+| ------------------------- | ------- | -------------- |
+| Local Development         | ✅       | ❌              |
+| Works Offline             | ✅       | ❌              |
+| Docker Desktop Kubernetes | ✅       | ⚠️             |
+| Easy for Beginners        | ✅       | ✅              |
+| Cloud CI/CD               | ❌       | ✅              |
+| Enterprise Usage          | ✅       | ✅              |
+
+---
+
+# Helm Commands
 
 ```bash
-helm list
-```
+helm version
 
-### View Release Values
+helm lint ./helm/microservices
 
-```bash
-helm get values microservice-app
-```
+helm template microservice-app ./helm/microservices
 
-### Uninstall
+helm install microservice-app ./helm/microservices
 
-```bash
+helm upgrade microservice-app ./helm/microservices
+
+helm upgrade --install microservice-app ./helm/microservices
+
+helm history microservice-app
+
+helm rollback microservice-app 2
+
 helm uninstall microservice-app
 ```
 
 ---
 
-# Common Issues We Encountered
+# Common Issues
 
-## 1. nil pointer evaluating interface {}.port
+## Helm Template Error
+
+```
+nil pointer evaluating interface {}.port
+```
 
 ### Cause
 
-The default Helm test template referenced:
+Default Helm test templates referenced:
 
 ```yaml
 .Values.service.port
 ```
 
-while our `values.yaml` used:
-
-- auth
-- user
-- product
-
-### Solution
-
-Remove the `templates/tests/` directory or update the test template.
-
----
-
-## 2. Chart.yaml or values.yaml Missing
-
-### Cause
-
-The chart wasn't created properly.
-
-### Solution
-
-```bash
-helm create microservices
-```
-
-Then copy your templates again.
-
----
-
-## 3. Hardcoded Values Still Present
-
-### Cause
-
-Some manifests still contained fixed image names or replica counts.
-
-### Solution
-
-Replace them with Helm expressions:
+while our project uses:
 
 ```yaml
-replicas: {{ .Values.auth.replicas }}
-image: {{ .Values.auth.image }}
+auth
+
+user
+
+product
 ```
-
----
-
-## 4. Helm Upgrade Doesn't Change Pods
-
-### Cause
-
-The image tag didn't change, so Kubernetes didn't detect a new version.
 
 ### Solution
 
-Use a new image tag (for example, `v8`) or configure:
+Remove:
+
+```text
+templates/tests/
+```
+
+or update the template to match your values structure.
+
+---
+
+## Helm Upgrade Doesn't Update Pods
+
+### Cause
+
+Image tag remains unchanged.
+
+### Solution
+
+Use a new image tag (e.g., `v8`) or configure:
 
 ```yaml
 imagePullPolicy: Always
@@ -681,17 +850,18 @@ during development.
 
 # Best Practices
 
-- Keep all configurable values in `values.yaml`.
-- Use separate values files for Development, Staging, and Production.
-- Store secrets in GitHub Secrets.
-- Validate charts with `helm lint`.
-- Test charts using `helm template`.
-- Use `helm upgrade --install` in CI/CD pipelines.
-- Tag Docker images with version numbers instead of always using `latest`.
+* Keep all configurable values in `values.yaml`.
+* Use separate values files for Development, Staging, and Production.
+* Use helper templates to avoid duplication.
+* Validate charts using `helm lint`.
+* Test rendered manifests using `helm template`.
+* Use `helm upgrade --install` in every deployment pipeline.
+* Tag Docker images with version numbers instead of `latest`.
+* Automate deployments using Jenkins or GitHub Actions.
 
 ---
 
-# Final Project Architecture
+# Final Architecture
 
 ```text
                     Browser
@@ -720,51 +890,49 @@ during development.
                         ▼
                    Helm Chart
                         │
+          ┌─────────────┴─────────────┐
+          ▼                           ▼
+     Jenkins CI/CD           GitHub Actions
+          │                           │
+          └─────────────┬─────────────┘
                         ▼
-                GitHub Actions CI/CD
-                        │
-                        ▼
-              Automated Deployments
+             Automated Deployments
 ```
 
 ---
 
 # Final Checklist
 
-Before considering the project complete, verify that you can:
-
-- ✅ Build all three Node.js microservices
-- ✅ Build and push Docker images
-- ✅ Deploy to Kubernetes
-- ✅ Access services through NGINX Ingress
-- ✅ Connect to MongoDB Atlas
-- ✅ Use ConfigMaps and Secrets
-- ✅ Authenticate with JWT
-- ✅ Configure readiness and liveness probes
-- ✅ Scale manually and with HPA
-- ✅ Perform rolling updates and rollbacks
-- ✅ View logs using `kubectl logs`
-- ✅ Monitor the cluster with Prometheus and Grafana
-- ✅ Package the application using Helm
-- ✅ Automate deployments with GitHub Actions
+* ✅ Package Kubernetes resources using Helm.
+* ✅ Deploy the application using a single Helm command.
+* ✅ Create reusable Helm templates.
+* ✅ Manage Development and Production values.
+* ✅ Install Jenkins locally.
+* ✅ Configure Docker and Kubernetes in Jenkins.
+* ✅ Create a Jenkins Pipeline.
+* ✅ Automate Docker image builds.
+* ✅ Push Docker images to Docker Hub.
+* ✅ Deploy automatically using Helm.
+* ✅ Verify Kubernetes rollouts.
+* ✅ Automate deployments using GitHub Actions.
+* ✅ Troubleshoot Helm and CI/CD issues.
 
 ---
 
-# Congratulations! 🎉
+## Congratulations! 🎉
 
-You have completed an **end-to-end production-ready Node.js Microservices project** covering the core technologies used in modern cloud-native application development.
+You have now completed an end-to-end production-grade Node.js Microservices project covering:
 
-Along the way, you also solved real-world implementation challenges, including:
+* Docker
+* Kubernetes
+* Helm
+* Jenkins CI/CD
+* GitHub Actions CI/CD
+* Monitoring with Prometheus & Grafana
+* Horizontal Pod Autoscaling
+* Rolling Updates
+* Secure Configuration using ConfigMaps & Secrets
+* JWT Authentication
+* Production Deployment Best Practices
 
-- ✅ ErrImageNeverPull
-- ✅ Docker Hub authentication and image tagging
-- ✅ NGINX Ingress access on Docker Desktop
-- ✅ MongoDB Atlas connection using Kubernetes Secrets
-- ✅ HPA command deprecation (`--cpu-percent → --cpu=70%`)
-- ✅ Helm template errors (`nil pointer evaluating interface {}.port`)
-- ✅ Pod naming issues when retrieving logs
-- ✅ Rolling updates and image versioning
-- ✅ Metrics Server TLS certificate issues
-- ✅ Prometheus & Grafana installation and access
-
-This project demonstrates not only the final architecture but also the troubleshooting, deployment, monitoring, and operational skills required to build and maintain production-ready microservices on Kubernetes.
+You now have the knowledge and hands-on experience to build, package, automate, deploy, monitor, and maintain production-ready cloud-native microservices using modern DevOps practices.
