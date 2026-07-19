@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: auth-deployment
+
+spec:
+  replicas: {{ .Values.auth.replicas }}
+
+  selector:
+    matchLabels:
+      app: auth
+
+  template:
+    metadata:
+      labels:
+        app: auth
+
+    spec:
+      containers:
+      - name: auth
+        image: {{ .Values.auth.image }}
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: MONGO_URI
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.auth.port }}
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.auth.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.auth.port }}
+          initialDelaySeconds: 20
+          periodSeconds: 10

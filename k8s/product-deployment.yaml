@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: product-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: product
+
+  template:
+
+    metadata:
+      labels:
+        app: product
+
+    spec:
+
+      containers:
+
+      - name: product
+
+        image: firdousalam2058/product-service:v1
+
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: MONGO_URI
+
+        imagePullPolicy: IfNotPresent
+
+        ports:
+        - containerPort: 3002
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 20
+          periodSeconds: 10

@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: user-deployment
+
+spec:
+  replicas: {{ .Values.user.replicas }}
+
+  selector:
+    matchLabels:
+      app: user
+
+  template:
+
+    metadata:
+      labels:
+        app: user
+
+    spec:
+
+      containers:
+
+      - name: user
+
+        image: {{ .Values.user.image }}
+
+        imagePullPolicy: IfNotPresent
+
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: MONGO_URI
+
+        ports:
+        - containerPort: {{ .Values.user.port }}
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.user.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.user.port }}
+          initialDelaySeconds: 20
+          periodSeconds: 10

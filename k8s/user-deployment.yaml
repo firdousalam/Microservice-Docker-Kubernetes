@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: user-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: user
+
+  template:
+
+    metadata:
+      labels:
+        app: user
+
+    spec:
+
+      containers:
+
+      - name: user
+
+        image: firdousalam2058/user-service:v2
+
+        imagePullPolicy: IfNotPresent
+
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: MONGO_URI
+
+        ports:
+        - containerPort: 3001
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 20
+          periodSeconds: 10
