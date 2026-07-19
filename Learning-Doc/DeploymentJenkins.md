@@ -135,6 +135,78 @@ Successfully tagged devops-jenkins
 Step 6 – Start Jenkins
 docker compose up -d
 
+
+docker compose up -d
+[+] up 3/4
+ ✔ Network... Created                                                                                               0.1s
+ ✔ Volume ... Created                                                                                               0.0s
+ - Contain... Creating                                                                                              0.1s
+ ✘ service... Error response from daemon: Conflict. The container name "/jenkins" is already in use by container "0a72ebefa8d5f84a67d5daf341a8a4c8a0ce7eedfeaa98b1da872b53a868ee56". You have to remove (or rename) that container to be able to reuse that name. 0.0s
+Error response from daemon: Conflict. The container name "/jenkins" is already in use by container "0a72ebefa8d5f84a67d5daf341a8a4c8a0ce7eedfeaa98b1da872b53a868ee56". You have to remove (or rename) that container to be able to reuse that name.
+
+What's next:
+    Debug this Compose error with Gordon → docker ai "help me fix this compose error"
+
+Excellent! This is a normal Docker conflict. You already have a container named jenkins running.
+
+The error:
+
+Conflict. The container name "/jenkins" is already in use
+
+means Docker Compose is trying to create another container with the same name.
+
+Option 1 (Recommended) - Stop and Remove the Old Jenkins
+
+First, check your containers:
+
+docker ps -a
+
+You'll likely see something like:
+
+CONTAINER ID   IMAGE                  NAME
+0a72ebefa8d5   jenkins/jenkins:lts     jenkins
+
+Stop it:
+
+docker stop jenkins
+
+Remove it:
+
+docker rm jenkins
+
+Now start your new custom Jenkins:
+
+docker compose up -d
+Option 2 - Keep Both Jenkins Containers
+
+If you want to keep your existing Jenkins, edit your docker-compose.yml.
+
+Change:
+
+container_name: jenkins
+
+to:
+
+container_name: jenkins-devops
+
+Also change the port:
+
+ports:
+  - "8081:8080"
+
+instead of
+
+8080:8080
+
+Then run:
+
+docker compose up -d
+
+Open:
+
+http://localhost:8081
+
+
 Check:
 
 docker ps
