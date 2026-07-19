@@ -11,8 +11,9 @@ pipeline {
         }
 
         stage('Install') {
-            echo 'Install'
+           
             steps {
+                 echo 'Install'
                 dir('auth-service') {
                     sh 'npm install'
                 }
@@ -25,6 +26,24 @@ pipeline {
                     sh 'npm install'
                 }
             }
+        }
+
+        stage('Test') {
+           
+            steps {
+                 echo 'Test'
+            //     dir('auth-service') {
+            //         sh 'npm test'
+            //     }
+
+            //     dir('user-service') {
+            //         sh 'npm test'
+            //     }
+
+            //     dir('product-service') {
+            //         sh 'npm test'
+            //     }
+             }
         }
 
         stage('Build Docker') {
