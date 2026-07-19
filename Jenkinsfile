@@ -12,14 +12,14 @@ pipeline {
 
         stage('Install') {
             steps {
-                npm install
+                bat "npm install"
                 echo 'Installing dependencies...'
             }
         }
 
         stage('Test') {
             steps {
-                npm test
+                bat "npm test"
                 echo 'Running tests...'
             }
         }
