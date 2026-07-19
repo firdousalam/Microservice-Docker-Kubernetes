@@ -48,13 +48,26 @@ pipeline {
 
         stage('Build Docker') {
             steps {
-                sh 'docker build -t firdousalam2058/auth-service:v1 ./auth-service'
+                docker build -t firdousalam2058/auth-service:v1 ./auth-service
+                docker build -t firdousalam2058/user-service:v1 ./user-service
+                docker build -t firdousalam2058/product-service:v1 ./product-service
             }
         }
 
         stage('Push Docker') {
-            steps {
-                sh 'docker push firdousalam2058/auth-service:v1'
+            {
+                steps {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        sh '''
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker push firdousalam2058/auth-service:v1
+                        '''
+                    }
+                }
             }
         }
 
