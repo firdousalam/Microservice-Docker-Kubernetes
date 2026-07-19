@@ -12,44 +12,38 @@ pipeline {
 
         stage('Install') {
             steps {
-                bat "npm install"
-                echo 'Installing dependencies...'
+                sh 'npm install'
             }
         }
 
         stage('Test') {
             steps {
-                bat "npm test"
-                echo 'Running tests...'
+                sh 'npm test'
             }
         }
 
         stage('Build Docker') {
             steps {
-                echo 'Building Docker images...'
-                bat "docker build -t firdousalam2058/auth-service:v1 ./auth-service"
+                sh 'docker build -t firdousalam2058/auth-service:v1 ./auth-service'
             }
         }
 
         stage('Push Docker') {
             steps {
-                echo 'Pushing Docker images...'
-                bat "docker push firdousalam2058/auth-service:v1"
+                sh 'docker push firdousalam2058/auth-service:v1'
             }
         }
 
         stage('Deploy Using Helm') {
             steps {
-                echo 'Deploying using Helm...'
-                bat "helm upgrade --install microservice-app ./helm/microservices"
+                sh 'helm upgrade --install microservice-app ./helm/microservices'
             }
         }
 
         stage('Verify') {
             steps {
-                echo 'Verifying deployment...'
-                bat "kubectl get pods"
-                bat "kubectl get services"
+                sh 'kubectl get pods'
+                sh 'kubectl get services'
             }
         }
     }
