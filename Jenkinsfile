@@ -49,7 +49,7 @@ pipeline {
             steps {
                 echo 'Verifying deployment...'
                 bat "kubectl get pods"
-                kubectl get services
+                bat "kubectl get services"
             }
         }
     }
