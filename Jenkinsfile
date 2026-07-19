@@ -29,19 +29,7 @@ pipeline {
 
         stage('Test') {
             echo 'Test'
-            // steps {
-            //     dir('auth-service') {
-            //         sh 'npm test'
-            //     }
-
-            //     dir('user-service') {
-            //         sh 'npm test'
-            //     }
-
-            //     dir('product-service') {
-            //         sh 'npm test'
-            //     }
-            // }
+           
         }
 
         stage('Build Docker') {

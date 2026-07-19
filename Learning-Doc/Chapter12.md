@@ -867,8 +867,35 @@ Verify
 kubectl get pods
 kubectl get services
 
+# Install Node
+
+docker exec -u 0 -it jenkins bash
+
+or equivalently:
+
+docker exec --user root -it jenkins bash
+
+Now your prompt should look like:
+
+root@0a72ebefa8d5:/#
+
+Then install Node.js:
+
+apt-get update
+
+apt-get install -y curl gnupg
+
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+
+apt-get install -y nodejs
+
+Verify:
+
+node -v
+npm -v
 
 # Step 19.b – Create a Custom Jenkins Docker Image
+
 
 Instead of using the default Jenkins image, we'll build one that already contains:
 
